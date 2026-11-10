@@ -51,9 +51,10 @@ export async function POST(request: Request) {
     if (process.env.VERCEL) {
       return NextResponse.json({ error: "Image storage isn't configured: add SUPABASE_SECRET_KEY to the server's environment." }, { status: 500 });
     }
-    const dir = path.join(process.cwd(), "public", "uploads", ...folder.split("/"));
+    // Local-dev fallback only (Vercel returns above). Ignored by the bundler so it doesn't trace the whole project.
+    const dir = path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "uploads", ...folder.split("/"));
     await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(path.join(dir, name), buf);
+    await fs.writeFile(path.join(/*turbopackIgnore: true*/ dir, name), buf);
     url = `/uploads/${folder}/${name}`;
   }
   await audit(user, "media.uploaded", "media", url, { bytes: file.size, type: kind.mime, storage: storage ? "supabase" : "local" });
