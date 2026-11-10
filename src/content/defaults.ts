@@ -62,7 +62,7 @@ export const DEFAULT_SETTINGS: SettingsMap = {
     motto: "SAY IT WITHOUT SAYING IT.",
     supportEmail: "sleeptalktoronto@proton.me",
     phone: "+1 (647) 512-6054",
-    address: "30 Kidd Terr, North York ON M3J 3S8, Canada",
+    address: "North York, Canada",
     businessHours: "",
     demoMode: true,
     logoLight: "/brand/wordmark-light.png",
