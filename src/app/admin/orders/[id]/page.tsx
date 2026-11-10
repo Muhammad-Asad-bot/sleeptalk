@@ -7,7 +7,8 @@ import { orders, users } from "@/db/schema";
 import { addOrderNoteAction, cancelOrderAction, refundOrderAction, updateFulfilmentAction } from "@/app/admin/_actions/orders";
 import { AddressBlock } from "@/components/account/order-detail";
 import { SmartImage } from "@/components/ui/smart-image";
-import { abtn, adminInput, adminSelect, adminTextarea, AField, Badge, Card, Flash, FULFILMENT_STATUS, ORDER_STATUS, PageHeader } from "@/components/admin/ui";
+import { abtn, adminInput, adminSelect, adminTextarea, AField, Badge, Card, Flash, FULFILMENT_STATUS, PageHeader, paymentStatus } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { formatMoney } from "@/lib/markets";
 import { requireStaff } from "@/lib/server/auth";
 import { formatDateTime } from "@/lib/utils";
@@ -34,7 +35,7 @@ export default async function AdminOrderPage({ params, searchParams }: Props) {
         description={
           <span className="flex flex-wrap items-center gap-2">
             Placed {formatDateTime(order.createdAt)} · {order.market} · {order.currency}
-            <Badge color={ORDER_STATUS[order.status].color}>{ORDER_STATUS[order.status].label}</Badge>
+            <Badge color={paymentStatus(order).color}>{paymentStatus(order).label}</Badge>
             {order.status === "paid" ? <Badge color={FULFILMENT_STATUS[order.fulfillmentStatus].color}>{FULFILMENT_STATUS[order.fulfillmentStatus].label}</Badge> : null}
             {order.isTest ? <Badge>Test order</Badge> : null}
           </span>
@@ -99,7 +100,7 @@ export default async function AdminOrderPage({ params, searchParams }: Props) {
                   Email the customer when marked Shipped or Delivered
                 </label>
                 <div className="md:text-right">
-                  <button type="submit" className={abtn("primary")}>Save fulfilment</button>
+                  <SubmitButton className={abtn("primary")} pendingText="Saving…">Save fulfilment</SubmitButton>
                 </div>
               </form>
             ) : (
@@ -116,7 +117,7 @@ export default async function AdminOrderPage({ params, searchParams }: Props) {
             <form action={addOrderNoteAction} className="flex flex-col gap-2">
               <input type="hidden" name="id" value={order.id} />
               <textarea name="note" required maxLength={2000} placeholder="Add a note for the team…" className={adminTextarea} />
-              <div><button type="submit" className={abtn("secondary")}>Add note</button></div>
+              <div><SubmitButton className={abtn("secondary")}>Add note</SubmitButton></div>
             </form>
           </Card>
         </div>
@@ -143,11 +144,16 @@ export default async function AdminOrderPage({ params, searchParams }: Props) {
               <div className="flex justify-between gap-3"><dt className="text-ash">Reference</dt><dd className="truncate text-xs">{order.paymentRef ?? "—"}</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-ash">Paid</dt><dd>{order.paidAt ? formatDateTime(order.paidAt) : "—"}</dd></div>
             </dl>
-            {order.status === "pending_payment" ? (
+            {order.status === "pending_payment" && order.bankDebitSubmittedAt ? (
+              <p className="mt-4 border-t border-line pt-4 text-xs text-ash">
+                Bank payment (Canadian pre-authorized debit) submitted {formatDateTime(order.bankDebitSubmittedAt)}. Stripe usually confirms it within 3–5 business days. <strong className="text-ink">Don&apos;t ship until this order shows Paid.</strong>
+              </p>
+            ) : null}
+            {order.status === "pending_payment" && !order.bankDebitSubmittedAt ? (
               <form action={cancelOrderAction} className="mt-4 border-t border-line pt-4">
                 <input type="hidden" name="id" value={order.id} />
                 <p className="mb-2 text-xs text-ash">Cancel this unpaid order and return its reserved stock.</p>
-                <button type="submit" className={abtn("danger", "sm")}>Cancel order</button>
+                <SubmitButton className={abtn("danger", "sm")} confirm="Cancel this unpaid order? Its reserved stock will be released.">Cancel order</SubmitButton>
               </form>
             ) : null}
             {order.status === "paid" ? (
@@ -158,7 +164,7 @@ export default async function AdminOrderPage({ params, searchParams }: Props) {
                 <label className="flex items-center gap-2 text-xs">
                   <input type="checkbox" name="restock" className="size-4 accent-ink" /> Return items to stock
                 </label>
-                <button type="submit" className={abtn("danger", "sm")}>Refund {money(order.total)}</button>
+                <SubmitButton className={abtn("danger", "sm")} confirm={`Refund ${money(order.total)} to the customer? This cannot be undone.`} pendingText="Refunding…">Refund {money(order.total)}</SubmitButton>
               </form>
             ) : null}
           </Card>

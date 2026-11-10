@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { saveSocialAction } from "@/app/admin/_actions/content";
 import { SocialGlyph } from "@/components/layout/social-links";
 import { abtn, adminInput, Card, Flash, PageHeader } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import type { SocialSettings } from "@/content/defaults";
 import { requireStaff } from "@/lib/server/auth";
 import { getSettings } from "@/lib/server/settings";
@@ -37,7 +38,7 @@ export default async function SocialLinksPage({ searchParams }: { searchParams: 
                 <input name={n.key} type="url" defaultValue={social[n.key]} placeholder={n.placeholder} className={adminInput} />
               </label>
             ))}
-            <button type="submit" className={abtn("primary")}>Save social links</button>
+            <SubmitButton className={abtn("primary")}>Save social links</SubmitButton>
           </div>
         </Card>
       </form>

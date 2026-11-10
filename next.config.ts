@@ -18,6 +18,15 @@ const demoImageHosts = [
   "youngfashionmind.de",
 ];
 
+/** Product photos uploaded to Supabase Storage (public bucket) are served from the project's host. */
+const supabaseHost = (() => {
+  try {
+    return process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname : null;
+  } catch {
+    return null;
+  }
+})();
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -33,7 +42,10 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["@electric-sql/pglite", "pg"],
   images: {
-    remotePatterns: demoImageHosts.map((hostname) => ({ protocol: "https", hostname })),
+    remotePatterns: [
+      ...demoImageHosts.map((hostname) => ({ protocol: "https" as const, hostname })),
+      ...(supabaseHost ? [{ protocol: "https" as const, hostname: supabaseHost, pathname: "/storage/v1/object/public/**" }] : []),
+    ],
     qualities: [75, 85],
     formats: ["image/avif", "image/webp"],
   },

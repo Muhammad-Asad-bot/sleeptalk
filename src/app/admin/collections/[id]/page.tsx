@@ -5,6 +5,7 @@ import { getDb } from "@/db/client";
 import { categories, collectionProducts, collections, products } from "@/db/schema";
 import { deleteCollectionAction, saveCollectionAction } from "@/app/admin/_actions/catalog";
 import { abtn, adminInput, adminSelect, adminTextarea, AField, Card, Flash, PageHeader } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { requireStaff } from "@/lib/server/auth";
 
 export const metadata: Metadata = { title: "Collection" };
@@ -95,13 +96,13 @@ export default async function CollectionEditPage({ params, searchParams }: Props
               <AField label="Menu order"><input type="number" name="position" defaultValue={c?.position ?? 0} className={adminInput} /></AField>
             </div>
           </Card>
-          <button type="submit" className={`${abtn("primary")} w-full`}>{c ? "Save collection" : "Create collection"}</button>
+          <SubmitButton className={`${abtn("primary")} w-full`}>{c ? "Save collection" : "Create collection"}</SubmitButton>
         </div>
       </form>
       {c ? (
         <form action={deleteCollectionAction} className="mt-8 border-t border-line pt-6">
           <input type="hidden" name="id" value={c.id} />
-          <button type="submit" className={abtn("danger", "sm")}>Delete collection</button>
+          <SubmitButton className={abtn("danger", "sm")} confirm="Delete this collection? Products in it are not affected.">Delete collection</SubmitButton>
           <span className="ml-3 text-xs text-stone">Products are not affected.</span>
         </form>
       ) : null}

@@ -76,9 +76,14 @@ export function AnnouncementBar({
           <span className="hidden h-4 w-px bg-canvas/30 md:block" aria-hidden />
         </div>
 
-        {/* Right: market / currency */}
+        {/* Right: market / currency (plain label when the store sells in one country only) */}
         <div className="hidden items-center justify-end md:flex" role="group" aria-label="Country and currency">
-          {markets.map((code, i) => (
+          {markets.length <= 1 ? (
+            <span className="uppercase">
+              {MARKETS[market].label} <span className="ml-1.5">{MARKETS[market].currencySymbol} {MARKETS[market].currency}</span>
+            </span>
+          ) : null}
+          {markets.length > 1 && markets.map((code, i) => (
             <span key={code} className="flex items-center">
               {i > 0 ? <span className="mx-3 h-3.5 w-px bg-canvas/30" aria-hidden /> : null}
               <button

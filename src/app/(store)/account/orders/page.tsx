@@ -4,7 +4,7 @@ import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { orders } from "@/db/schema";
 import { AccountShell } from "@/components/account/account-shell";
-import { FULFILMENT_LABEL, ORDER_STATUS_LABEL } from "@/components/account/order-detail";
+import { FULFILMENT_LABEL, paymentLabel } from "@/components/account/order-detail";
 import { formatMoney } from "@/lib/markets";
 import { requireUser } from "@/lib/server/auth";
 import { formatDate } from "@/lib/utils";
@@ -39,7 +39,7 @@ export default async function AccountOrdersPage() {
                   <td className="py-4"><Link href={`/account/orders/${o.number}`} className="font-medium underline-offset-4 hover:underline">{o.number}</Link></td>
                   <td className="py-4 text-ash">{formatDate(o.createdAt)}</td>
                   <td className="py-4 text-ash">{o.items.reduce((n, i) => n + i.quantity, 0)}</td>
-                  <td className="py-4">{o.status === "paid" ? FULFILMENT_LABEL[o.fulfillmentStatus] : ORDER_STATUS_LABEL[o.status]}</td>
+                  <td className="py-4">{o.status === "paid" ? FULFILMENT_LABEL[o.fulfillmentStatus] : paymentLabel(o)}</td>
                   <td className="py-4 text-right font-medium">{formatMoney(o.total, o.market)}</td>
                 </tr>
               ))}

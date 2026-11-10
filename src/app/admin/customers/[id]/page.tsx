@@ -5,7 +5,8 @@ import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { addresses, orders, users, wishlistItems } from "@/db/schema";
 import { setCustomerDisabledAction } from "@/app/admin/_actions/sales";
-import { abtn, Badge, Card, EmptyRow, Flash, FULFILMENT_STATUS, ORDER_STATUS, PageHeader, Table, tdClass, thClass } from "@/components/admin/ui";
+import { abtn, Badge, Card, EmptyRow, Flash, FULFILMENT_STATUS, paymentStatus, PageHeader, Table, tdClass, thClass } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { formatMoney } from "@/lib/markets";
 import { requireStaff } from "@/lib/server/auth";
 import { formatDate, formatDateTime } from "@/lib/utils";
@@ -36,7 +37,7 @@ export default async function CustomerPage({ params, searchParams }: Props) {
             <form action={setCustomerDisabledAction}>
               <input type="hidden" name="id" value={u.id} />
               <input type="hidden" name="disabled" value={u.disabled ? "" : "on"} />
-              <button type="submit" className={abtn(u.disabled ? "secondary" : "danger")}>{u.disabled ? "Re-enable account" : "Disable account"}</button>
+              <SubmitButton className={abtn(u.disabled ? "secondary" : "danger")} confirm={u.disabled ? undefined : "Disable this account? The customer will no longer be able to sign in."}>{u.disabled ? "Re-enable account" : "Disable account"}</SubmitButton>
             </form>
           ) : null
         }
@@ -52,7 +53,7 @@ export default async function CustomerPage({ params, searchParams }: Props) {
                   <tr key={o.id}>
                     <td className={tdClass}><Link href={`/admin/orders/${o.id}`} className="font-medium hover:underline">{o.number}</Link></td>
                     <td className={`${tdClass} text-ash`}>{formatDateTime(o.createdAt)}</td>
-                    <td className={tdClass}><Badge color={ORDER_STATUS[o.status].color}>{ORDER_STATUS[o.status].label}</Badge></td>
+                    <td className={tdClass}><Badge color={paymentStatus(o).color}>{paymentStatus(o).label}</Badge></td>
                     <td className={tdClass}>{o.status === "paid" ? <Badge color={FULFILMENT_STATUS[o.fulfillmentStatus].color}>{FULFILMENT_STATUS[o.fulfillmentStatus].label}</Badge> : "—"}</td>
                     <td className={`${tdClass} text-right tabular-nums`}>{formatMoney(o.total, o.market, { forceDecimals: true })}</td>
                   </tr>

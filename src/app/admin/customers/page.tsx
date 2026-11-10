@@ -46,7 +46,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
         <Stat label="Newsletter subscribers" value={subs} />
         <Stat label="Paid guest orders" value={guestOrders} />
       </div>
-      <FilterBar>
+      <FilterBar clearHref={sp.q ? "/admin/customers" : undefined}>
         <AField label="Search" className="w-72"><input name="q" defaultValue={sp.q} placeholder="Name or email" className={adminInput} /></AField>
       </FilterBar>
       <Table>

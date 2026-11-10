@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { AddressFields, orderItems, orders } from "@/db/schema";
 import { SmartImage } from "@/components/ui/smart-image";
 import { formatMoney } from "@/lib/markets";
@@ -12,6 +13,11 @@ export const ORDER_STATUS_LABEL: Record<string, string> = {
   cancelled: "Cancelled",
   refunded: "Refunded",
 };
+/** Customer-facing payment status; a submitted bank debit shows as processing rather than awaiting payment. */
+export function paymentLabel(o: { status: string; bankDebitSubmittedAt?: Date | null }) {
+  return o.status === "pending_payment" && o.bankDebitSubmittedAt ? "Bank payment processing" : ORDER_STATUS_LABEL[o.status];
+}
+
 export const FULFILMENT_LABEL: Record<string, string> = {
   unfulfilled: "Preparing",
   processing: "Processing",
@@ -58,6 +64,34 @@ export function OrderProgress({ order }: { order: Order }) {
   );
 }
 
+/** Store policy: refunds are never automatic — the customer contacts us and staff refund from admin. */
+function RefundNote({ order }: { order: Order }) {
+  if (order.status === "refunded") {
+    return (
+      <p className="border border-line bg-paper p-4 text-sm">
+        This order has been refunded to your original payment method. Depending on your bank, it can take a few working days to appear.
+      </p>
+    );
+  }
+  if (order.status !== "paid") return null;
+  return (
+    <div className="border border-line bg-paper p-4 text-sm">
+      <p className="font-medium">Need a refund?</p>
+      <p className="mt-1 text-ash">
+        Refunds aren&apos;t automatic. Get in touch with your order number and our team will review your request and reply by email.
+      </p>
+      <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+        <Link href={`/contact?topic=refund&order=${encodeURIComponent(order.number)}`} className="font-medium underline underline-offset-4">
+          Request a refund
+        </Link>
+        <Link href="/returns" className="text-ash underline underline-offset-4">
+          Returns &amp; refunds policy
+        </Link>
+      </p>
+    </div>
+  );
+}
+
 export function OrderDetail({ order }: { order: Order }) {
   const m = order.market;
   return (
@@ -98,12 +132,13 @@ export function OrderDetail({ order }: { order: Order }) {
           </div>
           <div>
             <p className="label mb-2 text-stone">Payment</p>
-            <p>{ORDER_STATUS_LABEL[order.status]}</p>
+            <p>{paymentLabel(order)}</p>
             {order.paidAt ? <p className="text-xs text-stone">{formatDateTime(order.paidAt)}</p> : null}
             {order.isTest ? <p className="mt-1 text-xs text-warning">Test order — no payment taken</p> : null}
           </div>
         </div>
       </div>
+      <RefundNote order={order} />
     </div>
   );
 }

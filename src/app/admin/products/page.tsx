@@ -37,7 +37,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         actions={<Link href="/admin/products/new" className={abtn("primary")}>Add product</Link>}
       />
       <Flash ok={sp.ok} error={sp.error} />
-      <FilterBar>
+      <FilterBar clearHref={sp.q || sp.status || sp.category ? "/admin/products" : undefined}>
         <AField label="Search" className="w-64"><input name="q" defaultValue={sp.q} placeholder="Title or slug" className={adminInput} /></AField>
         <AField label="Status">
           <select name="status" defaultValue={sp.status ?? ""} className={adminSelect}>

@@ -53,3 +53,18 @@ export function formatDateTime(date: Date | string | null | undefined, locale = 
     minute: "2-digit",
   }).format(d);
 }
+
+/**
+ * A colour's swatch value is one hex ("#141414") or an upper/lower pair for two-tone
+ * garments ("#E8E0D0,#141414" = cream upper, black lower).
+ */
+export function splitHex(value: string): [string, string | null] {
+  const [upper, lower] = value.split(",").map((s) => s.trim());
+  return [upper || "#111111", lower || null];
+}
+
+/** CSS background for a colour swatch: solid, or top/bottom halves for two-tone colours. */
+export function swatchBackground(value: string) {
+  const [upper, lower] = splitHex(value);
+  return lower ? `linear-gradient(180deg, ${upper} 50%, ${lower} 50%)` : upper;
+}

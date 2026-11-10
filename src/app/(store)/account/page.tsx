@@ -4,7 +4,7 @@ import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { addresses, orders } from "@/db/schema";
 import { AccountShell } from "@/components/account/account-shell";
-import { FULFILMENT_LABEL, ORDER_STATUS_LABEL } from "@/components/account/order-detail";
+import { FULFILMENT_LABEL, paymentLabel } from "@/components/account/order-detail";
 import { FormMessage } from "@/components/ui/fields";
 import { buttonClass } from "@/components/ui/button";
 import { formatMoney } from "@/lib/markets";
@@ -40,7 +40,7 @@ export default async function AccountPage({ searchParams }: Props) {
                 <li key={o.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
                   <Link href={`/account/orders/${o.number}`} className="font-medium underline-offset-4 hover:underline">{o.number}</Link>
                   <span className="text-ash">{formatDate(o.createdAt)}</span>
-                  <span>{o.status === "paid" ? FULFILMENT_LABEL[o.fulfillmentStatus] : ORDER_STATUS_LABEL[o.status]}</span>
+                  <span>{o.status === "paid" ? FULFILMENT_LABEL[o.fulfillmentStatus] : paymentLabel(o)}</span>
                   <span className="font-medium">{formatMoney(o.total, o.market)}</span>
                 </li>
               ))}

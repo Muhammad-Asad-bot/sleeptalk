@@ -47,9 +47,9 @@ export function ProductGallery({ images, colour, title }: { images: CatalogImage
               onClick={() => go(i)}
               aria-label={`Show image ${i + 1} of ${list.length}`}
               aria-current={i === active}
-              className={cn("relative block aspect-[4/5] w-full overflow-hidden bg-cream", i === active ? "ring-1 ring-ink" : "opacity-70 hover:opacity-100")}
+              className={cn("relative block aspect-[4/5] w-full overflow-hidden bg-paper", i === active ? "ring-1 ring-ink" : "opacity-70 hover:opacity-100")}
             >
-              <SmartImage src={img.url} alt="" fill sizes="72px" className="object-cover" showDemoTag={false} />
+              <SmartImage src={img.url} alt="" fill sizes="72px" className="object-contain" showDemoTag={false} />
             </button>
           </li>
         ))}
@@ -68,9 +68,10 @@ export function ProductGallery({ images, colour, title }: { images: CatalogImage
           aria-label={`${title} images`}
         >
           {list.map((img, i) => (
-            <div key={img.id} className="relative aspect-[4/5] w-full shrink-0 snap-center bg-cream" aria-roledescription="slide" aria-label={`${i + 1} of ${list.length}`}>
+            // Whole photo always visible (no cropping); on desktop the frame fits the screen height.
+            <div key={img.id} className="relative aspect-[4/5] w-full shrink-0 snap-center bg-paper lg:aspect-auto lg:h-[calc(100svh-9rem)] lg:max-h-[900px] lg:min-h-[420px]" aria-roledescription="slide" aria-label={`${i + 1} of ${list.length}`}>
               <button type="button" className="absolute inset-0 cursor-zoom-in" onClick={() => setLightbox(true)} aria-label={`Zoom image ${i + 1}`}>
-                <SmartImage src={img.url} alt={img.alt || title} fill priority={i === 0} sizes="(min-width:1024px) 50vw, 100vw" className="object-cover" />
+                <SmartImage src={img.url} alt={img.alt || title} fill priority={i === 0} sizes="(min-width:1024px) 50vw, 100vw" className="object-contain" />
               </button>
             </div>
           ))}

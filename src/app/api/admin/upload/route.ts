@@ -4,6 +4,7 @@ import path from "node:path";
 import { getCurrentUser, isStaff } from "@/lib/server/auth";
 import { audit } from "@/lib/server/audit";
 import { isSameOrigin } from "@/lib/server/security";
+import { supabaseStorage, uploadToSupabase } from "@/lib/server/storage";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 
@@ -17,8 +18,9 @@ function sniff(buf: Buffer): { ext: string; mime: string } | null {
 }
 
 /**
- * Admin image upload (staff only). Stores files in /public/uploads/YYYY/MM in development.
- * For production, point this at object storage / a CDN (see README "Media storage").
+ * Admin image upload (staff only).
+ *  - SUPABASE_SECRET_KEY set → Supabase Storage, public bucket "product-images" (production).
+ *  - otherwise → /public/uploads/YYYY/MM on local disk (development only; not persistent on Vercel).
  */
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -34,11 +36,26 @@ export async function POST(request: Request) {
   if (!kind) return NextResponse.json({ error: "Only JPG, PNG, WebP or AVIF images are allowed." }, { status: 415 });
 
   const now = new Date();
-  const dir = path.join(process.cwd(), "public", "uploads", String(now.getFullYear()), String(now.getMonth() + 1).padStart(2, "0"));
-  await fs.mkdir(dir, { recursive: true });
+  const folder = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`;
   const name = `${crypto.randomUUID()}.${kind.ext}`;
-  await fs.writeFile(path.join(dir, name), buf);
-  const url = `/uploads/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}/${name}`;
-  await audit(user, "media.uploaded", "media", url, { bytes: file.size, type: kind.mime });
+  const storage = supabaseStorage();
+  let url: string;
+  if (storage) {
+    try {
+      url = await uploadToSupabase(storage, `${folder}/${name}`, buf, kind.mime);
+    } catch (e) {
+      console.error("[upload]", e);
+      return NextResponse.json({ error: "Couldn't save the image to storage. Please try again." }, { status: 502 });
+    }
+  } else {
+    if (process.env.VERCEL) {
+      return NextResponse.json({ error: "Image storage isn't configured: add SUPABASE_SECRET_KEY to the server's environment." }, { status: 500 });
+    }
+    const dir = path.join(process.cwd(), "public", "uploads", ...folder.split("/"));
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, name), buf);
+    url = `/uploads/${folder}/${name}`;
+  }
+  await audit(user, "media.uploaded", "media", url, { bytes: file.size, type: kind.mime, storage: storage ? "supabase" : "local" });
   return NextResponse.json({ url });
 }

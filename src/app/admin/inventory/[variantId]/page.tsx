@@ -6,6 +6,7 @@ import { getDb } from "@/db/client";
 import { orders, products, stockMovements, users, variants } from "@/db/schema";
 import { adjustStockAction } from "@/app/admin/_actions/inventory";
 import { abtn, adminInput, adminSelect, AField, Badge, Card, EmptyRow, Flash, PageHeader, Stat, Table, tdClass, thClass } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { requireStaff } from "@/lib/server/auth";
 import { formatDateTime } from "@/lib/utils";
 
@@ -81,7 +82,7 @@ export default async function StockHistoryPage({ params, searchParams }: Props) 
           <AField label="Note" className="min-w-[220px] flex-1">
             <input name="note" maxLength={300} placeholder="e.g. PO-1042 delivery, 2 damaged" className={adminInput} />
           </AField>
-          <button type="submit" className={abtn("primary")}>Update stock</button>
+          <SubmitButton className={abtn("primary")}>Update stock</SubmitButton>
         </form>
       </Card>
       <Table>

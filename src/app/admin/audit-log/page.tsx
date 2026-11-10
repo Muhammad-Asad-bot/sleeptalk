@@ -28,7 +28,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <PageHeader title="Audit log" description="Every admin change to products, prices, stock, orders, discounts, content and settings." />
-      <FilterBar>
+      <FilterBar clearHref={sp.q ? "/admin/audit-log" : undefined}>
         <AField label="Search" className="w-72"><input name="q" defaultValue={sp.q} placeholder="Action, person, e.g. inventory, order" className={adminInput} /></AField>
       </FilterBar>
       <Table>

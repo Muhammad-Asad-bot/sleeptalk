@@ -11,18 +11,27 @@ import { getMarket } from "@/lib/server/market";
 import { getMarketConfigs, getSettings, getShippingRates } from "@/lib/server/settings";
 import { MARKETS, type MarketCode } from "@/lib/markets";
 
-/** "Free shipping on orders over £100 / $150" — built from the configured shipping thresholds. */
+/**
+ * Banner text built from the configured free-shipping thresholds, e.g.
+ * "Free shipping in Canada on orders over $500 CAD" (one market) or
+ * "Free shipping on orders over £100 GBP / $500 CAD" (several).
+ */
 async function freeShippingText(markets: MarketCode[]) {
   const parts: string[] = [];
+  const offered: MarketCode[] = [];
   for (const code of markets) {
     const rates = await getShippingRates(code);
     const thresholds = rates.map((r) => r.freeOver).filter((v): v is number => v != null);
     if (!thresholds.length) continue;
     const min = Math.min(...thresholds);
     const amount = min % 100 === 0 ? String(min / 100) : (min / 100).toFixed(2);
-    parts.push(`${MARKETS[code].currencySymbol}${amount}`);
+    parts.push(`${MARKETS[code].currencySymbol}${amount} ${MARKETS[code].currency}`);
+    offered.push(code);
   }
-  return parts.length ? `Free shipping on orders over ${parts.join(" / ")}` : null;
+  if (!parts.length) return null;
+  return offered.length === 1
+    ? `Free shipping in ${MARKETS[offered[0]].label} on orders over ${parts[0]}`
+    : `Free shipping on orders over ${parts.join(" / ")}`;
 }
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {

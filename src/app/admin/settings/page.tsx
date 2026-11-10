@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { saveStoreSettingsAction } from "@/app/admin/_actions/settings";
 import { UploadField } from "@/components/admin/upload-field";
 import { abtn, adminInput, adminTextarea, AField, Card, Flash, PageHeader } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { requireOwner } from "@/lib/server/auth";
 import { getSettings } from "@/lib/server/settings";
 
@@ -50,7 +51,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               <UploadField name="ogImage" defaultValue={seo.ogImage} label="Social share image (1200×630)" />
             </div>
           </Card>
-          <button type="submit" className={`${abtn("primary")} w-full`}>Save settings</button>
+          <SubmitButton className={`${abtn("primary")} w-full`}>Save settings</SubmitButton>
         </div>
       </form>
     </>

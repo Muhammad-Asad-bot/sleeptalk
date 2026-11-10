@@ -11,6 +11,9 @@ import { safeEqual } from "./security";
  *    ALLOW_TEST_PAYMENTS=true (staging only).
  *  - "stripe": Stripe Checkout (supports UK and Canadian merchants). Requires STRIPE_SECRET_KEY
  *    and STRIPE_WEBHOOK_SECRET; webhook endpoint: /api/webhooks/stripe
+ *    CAD orders can also be paid from a Canadian bank account (pre-authorized debit / ACSS).
+ *    Bank debits clear in 3–5 business days: the order stays "awaiting payment" with
+ *    bankDebitSubmittedAt set until checkout.session.async_payment_succeeded/failed arrives.
  */
 
 export type PaymentOrder = {
@@ -71,6 +74,13 @@ export async function createPaymentSession(order: PaymentOrder): Promise<Payment
     "line_items[0][price_data][product_data][name]": `SLEEP TALK order ${order.number} (${order.itemCount} item${order.itemCount === 1 ? "" : "s"})`,
     expires_at: String(Math.floor(Date.now() / 1000) + 60 * 60),
   });
+  if (order.currency.toUpperCase() === "CAD") {
+    // Card (incl. Apple Pay / Google Pay) plus Canadian bank account. One-off purchases by consumers.
+    body.append("payment_method_types[]", "card");
+    body.append("payment_method_types[]", "acss_debit");
+    body.set("payment_method_options[acss_debit][mandate_options][payment_schedule]", "sporadic");
+    body.set("payment_method_options[acss_debit][mandate_options][transaction_type]", "personal");
+  }
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
     headers: {

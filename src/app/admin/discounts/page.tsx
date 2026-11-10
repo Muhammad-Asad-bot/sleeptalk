@@ -5,6 +5,7 @@ import { getDb } from "@/db/client";
 import { discounts } from "@/db/schema";
 import { toggleDiscountAction } from "@/app/admin/_actions/sales";
 import { abtn, Badge, EmptyRow, Flash, PageHeader, Table, tdClass, thClass } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { formatMoney, type MarketCode } from "@/lib/markets";
 import { requireStaff } from "@/lib/server/auth";
 import { formatDate } from "@/lib/utils";
@@ -40,7 +41,7 @@ export default async function DiscountsPage({ searchParams }: { searchParams: Pr
                 <td className={`${tdClass} text-xs text-ash`}>{d.startsAt ? formatDate(d.startsAt) : "Now"} → {d.endsAt ? formatDate(d.endsAt) : "No end"}</td>
                 <td className={tdClass}>{!d.active ? <Badge>Inactive</Badge> : expired ? <Badge color="red">Expired</Badge> : scheduled ? <Badge color="amber">Scheduled</Badge> : <Badge color="green">Active</Badge>}{d.isDemo ? <span className="ml-1"><Badge color="amber">Demo</Badge></span> : null}</td>
                 <td className={tdClass}>
-                  <form action={toggleDiscountAction}><input type="hidden" name="id" value={d.id} /><button type="submit" className={abtn("ghost", "sm")}>{d.active ? "Deactivate" : "Activate"}</button></form>
+                  <form action={toggleDiscountAction}><input type="hidden" name="id" value={d.id} /><SubmitButton className={abtn("ghost", "sm")}>{d.active ? "Deactivate" : "Activate"}</SubmitButton></form>
                 </td>
               </tr>
             );

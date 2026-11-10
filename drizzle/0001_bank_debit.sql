@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "bank_debit_submitted_at" timestamp with time zone;

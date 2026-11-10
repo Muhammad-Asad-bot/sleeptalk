@@ -7,7 +7,7 @@ import { Drawer } from "@/components/ui/drawer";
 import { buttonClass } from "@/components/ui/button";
 import type { Facets, SortKey } from "@/lib/server/catalog";
 import { formatMoney, type MarketCode } from "@/lib/markets";
-import { cn } from "@/lib/utils";
+import { cn, swatchBackground } from "@/lib/utils";
 
 const SORTS: { value: SortKey; label: string }[] = [
   { value: "featured", label: "Featured" },
@@ -200,7 +200,7 @@ export function ListingControls({
                   label={c.name}
                   checked={colours.includes(c.name)}
                   onChange={() => toggle("colour", c.name)}
-                  swatch={c.name.includes("/") ? "linear-gradient(180deg,#E8E0D0 50%,#141414 50%)" : c.hex}
+                  swatch={swatchBackground(c.hex)}
                 />
               ))}
             </FilterGroup>

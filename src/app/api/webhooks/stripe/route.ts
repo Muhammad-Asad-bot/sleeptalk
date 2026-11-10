@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { markOrderFailed, markOrderPaid } from "@/lib/server/orders";
+import { markBankDebitSubmitted, markOrderFailed, markOrderPaid } from "@/lib/server/orders";
 import { verifyStripeSignature } from "@/lib/server/payments";
 
 /**
@@ -27,6 +27,9 @@ export async function POST(request: Request) {
     case "checkout.session.completed":
       if (session.payment_status === "paid") {
         await markOrderPaid(orderId, { ref: session.id, amount: session.amount_total, currency: session.currency });
+      } else if (session.payment_status === "unpaid") {
+        // Delayed method (Canadian bank debit): submitted, clears in a few days via async_payment_*.
+        await markBankDebitSubmitted(orderId, session.id);
       }
       break;
     case "checkout.session.async_payment_succeeded":

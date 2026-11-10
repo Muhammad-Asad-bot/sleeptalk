@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { FlashToast } from "@/components/admin/client";
 
 /* Shared admin UI primitives (server-compatible). */
 
@@ -79,6 +80,12 @@ export const ORDER_STATUS: Record<string, { label: string; color: keyof typeof B
   refunded: { label: "Refunded", color: "blue" },
 };
 
+/** Payment badge for an order; a submitted Canadian bank debit reads as "processing", not "awaiting". */
+export function paymentStatus(o: { status: string; bankDebitSubmittedAt?: Date | null }) {
+  if (o.status === "pending_payment" && o.bankDebitSubmittedAt) return { label: "Bank payment processing", color: "blue" as const };
+  return ORDER_STATUS[o.status];
+}
+
 export const FULFILMENT_STATUS: Record<string, { label: string; color: keyof typeof BADGE }> = {
   unfulfilled: { label: "Unfulfilled", color: "amber" },
   processing: { label: "Processing", color: "blue" },
@@ -138,20 +145,13 @@ export function abtn(variant: "primary" | "secondary" | "danger" | "ghost" = "pr
   );
 }
 
-/** Flash message driven by ?ok= / ?error= query params after a server action redirect. */
+/**
+ * Flash message driven by ?ok= / ?error= query params after a server action redirect.
+ * Rendered as a dismissible toast (see FlashToast) so it is visible wherever the page is scrolled.
+ */
 export function Flash({ ok, error }: { ok?: string; error?: string }) {
   if (!ok && !error) return null;
-  return (
-    <div
-      role={error ? "alert" : "status"}
-      className={cn(
-        "mb-5 border px-4 py-3 text-sm",
-        error ? "border-sale/40 bg-sale/5 text-sale" : "border-success/40 bg-success/5 text-success",
-      )}
-    >
-      {error ?? ok}
-    </div>
-  );
+  return <FlashToast />;
 }
 
 /** Simple numbered pagination preserving the current query string. */
@@ -174,11 +174,13 @@ export function Pagination({ page, pages, params }: { page: number; pages: numbe
   );
 }
 
-export function FilterBar({ children }: { children: React.ReactNode }) {
+/** GET filter form. Pass `clearHref` while filters are active to offer a one-click reset. */
+export function FilterBar({ children, clearHref }: { children: React.ReactNode; clearHref?: string }) {
   return (
     <form method="get" className="mb-4 flex flex-wrap items-end gap-2 border border-line bg-white/70 p-3">
       {children}
       <button type="submit" className={abtn("primary", "md")}>Apply</button>
+      {clearHref ? <Link href={clearHref} className={abtn("ghost", "md")}>Clear filters</Link> : null}
     </form>
   );
 }

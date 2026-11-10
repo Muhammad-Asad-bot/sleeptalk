@@ -4,6 +4,7 @@ import { getDb } from "@/db/client";
 import { contactMessages } from "@/db/schema";
 import { toggleMessageHandledAction } from "@/app/admin/_actions/sales";
 import { abtn, Badge, Flash, PageHeader } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { requireStaff } from "@/lib/server/auth";
 import { formatDateTime } from "@/lib/utils";
 
@@ -39,7 +40,7 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
               <p className="mt-2 whitespace-pre-line text-sm text-charcoal">{m.message}</p>
               <form action={toggleMessageHandledAction} className="mt-3">
                 <input type="hidden" name="id" value={m.id} />
-                <button type="submit" className={abtn(m.handled ? "secondary" : "primary", "sm")}>{m.handled ? "Reopen" : "Mark handled"}</button>
+                <SubmitButton className={abtn(m.handled ? "secondary" : "primary", "sm")}>{m.handled ? "Reopen" : "Mark handled"}</SubmitButton>
               </form>
             </li>
           ))}

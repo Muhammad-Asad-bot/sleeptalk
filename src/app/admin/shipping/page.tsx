@@ -4,6 +4,7 @@ import { getDb } from "@/db/client";
 import { markets, shippingRates } from "@/db/schema";
 import { deleteShippingRateAction, saveMarketAction, saveShippingRateAction } from "@/app/admin/_actions/settings";
 import { abtn, adminInput, adminTextarea, AField, Card, Flash, PageHeader } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { MARKETS, minorToInput, type MarketCode } from "@/lib/markets";
 import { requireStaff } from "@/lib/server/auth";
 
@@ -22,7 +23,7 @@ function RateForm({ r, market }: { r?: typeof shippingRates.$inferSelect; market
       <AField label="Note shown at checkout" className="md:col-span-3"><input name="description" defaultValue={r?.description} className={adminInput} /></AField>
       <label className="flex items-center gap-1.5 pb-2 text-xs md:col-span-1"><input type="checkbox" name="active" defaultChecked={r?.active ?? true} className="size-4 accent-ink" /> Active</label>
       <div className="flex gap-1 md:col-span-1">
-        <button type="submit" className={abtn(r ? "secondary" : "primary", "sm")}>{r ? "Save" : "Add"}</button>
+        <SubmitButton className={abtn(r ? "secondary" : "primary", "sm")}>{r ? "Save" : "Add"}</SubmitButton>
       </div>
       <input type="hidden" name="position" value={r?.position ?? 99} />
     </form>
@@ -55,7 +56,7 @@ export default async function ShippingPage({ searchParams }: { searchParams: Pro
               <AField label="Shipping summary (product pages)"><textarea name="shippingSummary" defaultValue={m.shippingSummary} className={adminTextarea} /></AField>
               <AField label="Returns summary (product pages)"><textarea name="returnsSummary" defaultValue={m.returnsSummary} className={adminTextarea} /></AField>
               <AField label="Taxes & duties note (bag/checkout)"><textarea name="taxNote" defaultValue={m.taxNote} className={adminTextarea} /></AField>
-              <div><button type="submit" className={abtn("secondary", "sm")}>Save market</button></div>
+              <div><SubmitButton className={abtn("secondary", "sm")}>Save market</SubmitButton></div>
             </form>
             <p className="mb-3 text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-ash">Delivery options</p>
             <div className="space-y-4">
@@ -64,7 +65,7 @@ export default async function ShippingPage({ searchParams }: { searchParams: Pro
                   <RateForm r={r} market={m.code} />
                   <form action={deleteShippingRateAction}>
                     <input type="hidden" name="id" value={r.id} />
-                    <button type="submit" className="text-xs text-sale underline">Delete rate</button>
+                    <SubmitButton className="inline-flex items-center gap-1 text-xs text-sale underline" confirm="Delete this delivery option? Customers will no longer see it at checkout.">Delete rate</SubmitButton>
                   </form>
                 </div>
               ))}

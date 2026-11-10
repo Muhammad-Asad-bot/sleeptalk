@@ -4,6 +4,8 @@ import { getDb } from "@/db/client";
 import { categories, products } from "@/db/schema";
 import { saveCategoryAction } from "@/app/admin/_actions/catalog";
 import { abtn, adminInput, adminTextarea, AField, Badge, Card, Flash, PageHeader } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
+import { UploadField } from "@/components/admin/upload-field";
 import { requireStaff } from "@/lib/server/auth";
 
 export const metadata: Metadata = { title: "Categories" };
@@ -17,10 +19,10 @@ function CategoryForm({ c }: { c?: typeof categories.$inferSelect }) {
       <AField label="Order"><input name="position" type="number" defaultValue={c?.position ?? 0} className={adminInput} /></AField>
       <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" name="visible" defaultChecked={c?.visible ?? true} className="size-4 accent-ink" /> Visible</label>
       <AField label="Description" className="md:col-span-3"><textarea name="description" defaultValue={c?.description} className={adminTextarea} /></AField>
-      <AField label="Tile image URL" className="md:col-span-3" hint="Upload images in a product, then paste the /uploads/… URL"><input name="image" defaultValue={c?.image} className={adminInput} /></AField>
+      <div className="md:col-span-3"><UploadField name="image" defaultValue={c?.image ?? ""} label="Tile image (menu & homepage)" /></div>
       <AField label="SEO title" className="md:col-span-3"><input name="seoTitle" defaultValue={c?.seoTitle} className={adminInput} /></AField>
       <AField label="Meta description" className="md:col-span-3"><input name="seoDescription" defaultValue={c?.seoDescription} className={adminInput} /></AField>
-      <div className="md:col-span-6"><button type="submit" className={abtn(c ? "secondary" : "primary")}>{c ? "Save category" : "Add category"}</button></div>
+      <div className="md:col-span-6"><SubmitButton className={abtn(c ? "secondary" : "primary")}>{c ? "Save category" : "Add category"}</SubmitButton></div>
     </form>
   );
 }

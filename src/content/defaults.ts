@@ -44,12 +44,16 @@ export type InventorySettings = {
   lowStockMessage: string;
 };
 
+/** Shop colour library: quick picks in the product editor. `hex` is "#rrggbb" or "#upper,#lower" (two-tone). */
+export type ColourLibrary = { list: { name: string; hex: string }[] };
+
 export type SettingsMap = {
   store: StoreSettings;
   social: SocialSettings;
   announcement: AnnouncementSettings;
   seo: SeoSettings;
   inventory: InventorySettings;
+  colours: ColourLibrary;
 };
 
 export const DEFAULT_SETTINGS: SettingsMap = {
@@ -91,6 +95,17 @@ export const DEFAULT_SETTINGS: SettingsMap = {
   inventory: {
     showLowStock: true,
     lowStockMessage: "Only {count} left",
+  },
+  colours: {
+    list: [
+      { name: "Black", hex: "#141414" },
+      { name: "Cream", hex: "#E8E0D0" },
+      { name: "Charcoal", hex: "#404042" },
+      { name: "White", hex: "#FFFFFF" },
+      { name: "Grey", hex: "#8A8A8A" },
+      { name: "Navy", hex: "#1F2A44" },
+      { name: "Cream / Black", hex: "#E8E0D0,#141414" },
+    ],
   },
 };
 

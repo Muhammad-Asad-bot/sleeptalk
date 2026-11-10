@@ -13,6 +13,7 @@ import {
   FULFILMENT_STATUS,
   ORDER_STATUS,
   PageHeader,
+  paymentStatus,
   Pagination,
   Table,
   tdClass,
@@ -61,7 +62,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   return (
     <>
       <PageHeader title="Orders" description={`${total} order${total === 1 ? "" : "s"} match the current filters.`} />
-      <FilterBar>
+      <FilterBar clearHref={sp.q || sp.status || sp.fulfillment || sp.market ? "/admin/orders" : undefined}>
         <AField label="Search" className="w-64">
           <input name="q" defaultValue={sp.q} placeholder="Order number or email" className={adminInput} />
         </AField>
@@ -113,7 +114,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                 </td>
                 <td className={tdClass}>{o.market}</td>
                 <td className={`${tdClass} tabular-nums`}>{items}</td>
-                <td className={tdClass}><Badge color={ORDER_STATUS[o.status].color}>{ORDER_STATUS[o.status].label}</Badge></td>
+                <td className={tdClass}><Badge color={paymentStatus(o).color}>{paymentStatus(o).label}</Badge></td>
                 <td className={tdClass}>
                   {o.status === "paid" || o.status === "refunded" ? (
                     <Badge color={FULFILMENT_STATUS[o.fulfillmentStatus].color}>{FULFILMENT_STATUS[o.fulfillmentStatus].label}</Badge>

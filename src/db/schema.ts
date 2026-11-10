@@ -347,6 +347,8 @@ export const orders = pgTable(
     accessToken: text("access_token").notNull(),
     paymentProvider: text("payment_provider").notNull(),
     paymentRef: text("payment_ref"),
+    /** Set when a Canadian bank debit (pre-authorized debit) was submitted and is waiting to clear (3–5 business days). */
+    bankDebitSubmittedAt: timestamp("bank_debit_submitted_at", { withTimezone: true }),
     stockReleased: boolean("stock_released").notNull().default(false),
     trackingNumber: text("tracking_number").notNull().default(""),
     carrier: text("carrier").notNull().default(""),

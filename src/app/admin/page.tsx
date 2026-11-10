@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { CheckCircle2, ChevronRight, ExternalLink, LayoutGrid, Percent, Plus } from "lucide-react";
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { orders, products, users, variants } from "@/db/schema";
-import { Badge, Card, FULFILMENT_STATUS, ORDER_STATUS, PageHeader, Stat, Table, EmptyRow, tdClass, thClass } from "@/components/admin/ui";
+import { contactMessages, orders, products, reviews, users, variants } from "@/db/schema";
+import { abtn, Badge, Card, FULFILMENT_STATUS, paymentStatus, PageHeader, Stat, Table, EmptyRow, tdClass, thClass } from "@/components/admin/ui";
 import { formatMoney, MARKETS, type MarketCode } from "@/lib/markets";
 import { requireStaff } from "@/lib/server/auth";
+import { getMarketConfigs } from "@/lib/server/settings";
 import { formatDateTime } from "@/lib/utils";
 
 type Props = { searchParams: Promise<{ denied?: string }> };
@@ -17,9 +19,10 @@ export default async function AdminDashboard({ searchParams }: Props) {
   const user = await requireStaff("/admin");
   const { denied } = await searchParams;
   const db = await getDb();
+  const marketConfigs = await getMarketConfigs();
   const since30 = daysAgo(30);
 
-  const [revenueRows, paid30, awaitingFulfilment, pendingPayment, customers, lowStock, recent, best, demoCount] = await Promise.all([
+  const [revenueRows, paid30, awaitingFulfilment, pendingPayment, customers, lowStock, recent, best, demoCount, openMessages, pendingReviews, reportedReviews, stockCounts] = await Promise.all([
     db
       .select({ market: orders.market, total: sql<number>`coalesce(sum(${orders.total}),0)`.mapWith(Number), count: sql<number>`count(*)`.mapWith(Number) })
       .from(orders)
@@ -39,16 +42,48 @@ export default async function AdminDashboard({ searchParams }: Props) {
     db.select().from(orders).orderBy(desc(orders.createdAt)).limit(8),
     db.select({ id: products.id, title: products.title, sales: products.salesCount }).from(products).where(eq(products.status, "active")).orderBy(desc(products.salesCount)).limit(5),
     db.$count(products, eq(products.isDemo, true)),
+    db.$count(contactMessages, eq(contactMessages.handled, false)),
+    db.$count(reviews, eq(reviews.status, "pending")),
+    db.$count(reviews, eq(reviews.reported, true)),
+    db
+      .select({
+        low: sql<number>`count(*)`.mapWith(Number),
+        out: sql<number>`count(*) filter (where ${variants.stock} <= 0)`.mapWith(Number),
+      })
+      .from(variants)
+      .innerJoin(products, eq(products.id, variants.productId))
+      .where(and(eq(variants.active, true), eq(variants.allowBackorder, false), lte(variants.stock, variants.lowStockThreshold), eq(products.status, "active")))
+      .then((r) => r[0] ?? { low: 0, out: 0 }),
   ]);
 
   const revenue = (m: MarketCode) => revenueRows.find((r) => r.market === m);
+  // Revenue cards for the markets the store sells in (plus any market that still has recent sales).
+  const activeMarkets = (Object.keys(MARKETS) as MarketCode[]).filter((m) => marketConfigs.some((c) => c.code === m && c.active) || revenue(m));
+
+  // Plain-language to-do list; only items with something to do are shown.
+  const tasks = [
+    { n: awaitingFulfilment, href: "/admin/orders?status=paid&fulfillment=unfulfilled", text: (n: number) => `${n} paid order${n === 1 ? "" : "s"} to pack and ship` },
+    { n: openMessages, href: "/admin/messages", text: (n: number) => `${n} customer message${n === 1 ? "" : "s"} waiting for a reply` },
+    { n: pendingReviews, href: "/admin/reviews", text: (n: number) => `${n} review${n === 1 ? "" : "s"} to approve or reject` },
+    { n: reportedReviews, href: "/admin/reviews?status=all&reported=1", text: (n: number) => `${n} review${n === 1 ? " has" : "s have"} been reported` },
+    { n: stockCounts.out, href: "/admin/inventory?filter=out", text: (n: number) => `${n} variant${n === 1 ? " is" : "s are"} sold out` },
+    { n: stockCounts.low - stockCounts.out, href: "/admin/inventory?filter=low", text: (n: number) => `${n} variant${n === 1 ? " is" : "s are"} running low` },
+    { n: pendingPayment, href: "/admin/orders?status=pending_payment", text: (n: number) => `${n} order${n === 1 ? " is" : "s are"} awaiting payment` },
+  ].filter((t) => t.n > 0);
 
   return (
     <>
       <PageHeader
         title={`Welcome back${user.firstName ? `, ${user.firstName}` : ""}`}
         description="Last 30 days at a glance. Figures come from live order records."
-        actions={<Link href="/admin/orders?fulfillment=unfulfilled&status=paid" className="text-xs font-semibold uppercase tracking-[0.08em] underline underline-offset-4">Orders to fulfil →</Link>}
+        actions={
+          <>
+            <Link href="/admin/products/new" className={abtn("primary")}><Plus className="size-3.5" /> Add product</Link>
+            <Link href="/admin/discounts/new" className={abtn("secondary")}><Percent className="size-3.5" /> New discount</Link>
+            <Link href="/admin/content" className={abtn("secondary")}><LayoutGrid className="size-3.5" /> Edit homepage</Link>
+            <Link href="/" target="_blank" className={abtn("ghost")}><ExternalLink className="size-3.5" /> View store</Link>
+          </>
+        }
       />
       {denied ? <p className="mb-5 border border-sale/40 bg-sale/5 px-4 py-3 text-sm text-sale">Only the store owner can open that page.</p> : null}
       {demoCount > 0 ? (
@@ -57,8 +92,26 @@ export default async function AdminDashboard({ searchParams }: Props) {
         </p>
       ) : null}
 
+      <Card title="Needs your attention" className="mb-6">
+        {tasks.length ? (
+          <ul className="divide-y divide-line">
+            {tasks.map((t) => (
+              <li key={t.href}>
+                <Link href={t.href} className="group flex items-center gap-3 py-2.5 text-sm hover:text-ink">
+                  <span className="grid size-7 shrink-0 place-items-center bg-warning/10 text-xs font-bold tabular-nums text-warning">{t.n > 99 ? "99+" : t.n}</span>
+                  <span className="flex-1">{t.text(t.n)}</span>
+                  <ChevronRight className="size-4 text-stone transition-transform group-hover:translate-x-0.5 group-hover:text-ink" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="flex items-center gap-2 text-sm text-success"><CheckCircle2 className="size-4" /> You&apos;re all caught up — nothing needs action right now.</p>
+        )}
+      </Card>
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {(Object.keys(MARKETS) as MarketCode[]).map((m) => (
+        {activeMarkets.map((m) => (
           <Stat key={m} label={`Revenue · ${MARKETS[m].label}`} value={formatMoney(revenue(m)?.total ?? 0, m, { forceDecimals: true })} hint={`${revenue(m)?.count ?? 0} paid orders · 30 days`} />
         ))}
         <Stat label="To fulfil" value={awaitingFulfilment} hint="Paid, not yet processed" tone={awaitingFulfilment ? "warn" : undefined} />
@@ -89,7 +142,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
                       </td>
                       <td className={`${tdClass} text-ash`}>{formatDateTime(o.createdAt)}</td>
                       <td className={`${tdClass} max-w-[200px] truncate`}>{o.email}</td>
-                      <td className={tdClass}><Badge color={ORDER_STATUS[o.status].color}>{ORDER_STATUS[o.status].label}</Badge></td>
+                      <td className={tdClass}><Badge color={paymentStatus(o).color}>{paymentStatus(o).label}</Badge></td>
                       <td className={tdClass}>{o.status === "paid" ? <Badge color={FULFILMENT_STATUS[o.fulfillmentStatus].color}>{FULFILMENT_STATUS[o.fulfillmentStatus].label}</Badge> : <span className="text-stone">—</span>}</td>
                       <td className={`${tdClass} text-right font-medium tabular-nums`}>{formatMoney(o.total, o.market, { forceDecimals: true })}</td>
                     </tr>

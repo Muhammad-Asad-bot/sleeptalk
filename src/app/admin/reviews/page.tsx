@@ -5,6 +5,7 @@ import { getDb } from "@/db/client";
 import { products, reviews } from "@/db/schema";
 import { moderateReviewAction } from "@/app/admin/_actions/sales";
 import { abtn, adminSelect, AField, Badge, FilterBar, Flash, PageHeader } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { requireStaff } from "@/lib/server/auth";
 import { formatDateTime } from "@/lib/utils";
 
@@ -32,7 +33,7 @@ export default async function ReviewsAdminPage({ searchParams }: { searchParams:
     <>
       <PageHeader title="Reviews" description="Customer reviews appear on product pages only after approval. “Verified purchase” is set automatically from paid orders." />
       <Flash ok={sp.ok} error={sp.error} />
-      <FilterBar>
+      <FilterBar clearHref={(sp.status && sp.status !== "pending") || sp.reported ? "/admin/reviews" : undefined}>
         <AField label="Status">
           <select name="status" defaultValue={status} className={adminSelect}>
             <option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="hidden">Hidden</option><option value="all">All</option>
@@ -61,9 +62,12 @@ export default async function ReviewsAdminPage({ searchParams }: { searchParams:
                     <input type="hidden" name="id" value={r.id} />
                     <input type="hidden" name="status" value={s} />
                     <input type="hidden" name="_return" value={ret} />
-                    <button type="submit" className={abtn(s === "approved" ? "primary" : s === "rejected" ? "danger" : "secondary", "sm")}>
+                    <SubmitButton
+                      className={abtn(s === "approved" ? "primary" : s === "rejected" ? "danger" : "secondary", "sm")}
+                      confirm={s === "rejected" ? "Reject this review? It will not be shown on the store." : undefined}
+                    >
                       {s === "approved" ? "Approve" : s === "rejected" ? "Reject" : "Hide"}
-                    </button>
+                    </SubmitButton>
                   </form>
                 ))}
               </div>

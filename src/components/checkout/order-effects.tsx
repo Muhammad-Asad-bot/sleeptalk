@@ -26,6 +26,18 @@ export function PaidOrderEffects({ orderNumber, currency, value, items }: { orde
   return null;
 }
 
+/** Bank payment submitted (not yet cleared): the bag is done with and this checkout attempt is over. */
+export function SubmittedOrderEffects() {
+  const { clearCart } = useStore();
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem("st_checkout_token");
+    } catch {}
+    clearCart();
+  }, [clearCart]);
+  return null;
+}
+
 /** Pending payment: poll by refreshing the server component until the provider confirms. */
 export function PendingRefresher() {
   const router = useRouter();

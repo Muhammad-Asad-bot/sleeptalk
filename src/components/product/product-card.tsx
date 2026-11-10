@@ -8,7 +8,7 @@ import { Price } from "@/components/ui/price";
 import { SmartImage } from "@/components/ui/smart-image";
 import { track } from "@/lib/analytics";
 import type { ProductCardData } from "@/lib/server/catalog";
-import { cn } from "@/lib/utils";
+import { cn, swatchBackground } from "@/lib/utils";
 import { QuickAddPanel } from "./quick-add";
 import { WishlistButton } from "./wishlist-button";
 
@@ -134,7 +134,7 @@ export function ProductCard({
                 key={c.name}
                 title={c.name}
                 className="size-3 rounded-full border border-ink/20"
-                style={c.name.includes("/") ? { background: "linear-gradient(180deg,#E8E0D0 50%,#141414 50%)" } : { background: c.hex }}
+                style={{ background: swatchBackground(c.hex) }}
               />
             ))}
           </ul>

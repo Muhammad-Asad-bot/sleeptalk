@@ -35,7 +35,8 @@ export const MARKETS: Record<MarketCode, MarketInfo> = {
 };
 
 export const MARKET_CODES = Object.keys(MARKETS) as MarketCode[];
-export const DEFAULT_MARKET: MarketCode = "UK";
+/** Fallback when no market is marked default in admin. The store currently sells in Canada (CAD) only. */
+export const DEFAULT_MARKET: MarketCode = "CA";
 export const MARKET_COOKIE = "st_market";
 
 export function isMarketCode(value: unknown): value is MarketCode {

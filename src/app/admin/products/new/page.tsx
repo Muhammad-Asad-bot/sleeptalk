@@ -22,7 +22,9 @@ export default async function NewProductPage({ searchParams }: Props) {
           type === "set" ? (
             "A set is sold as one item but takes stock from its pieces."
           ) : (
-            <>Starts as a draft. Creating a tracksuit set instead? <Link className="underline" href="/admin/products/new?type=set">New set</Link></>
+            <>
+              Fill in the steps below: name and description, prices, then each colour with its photos and stock per size. It&apos;s saved as a hidden draft until you set it to Active. Creating a tracksuit set instead? <Link className="underline" href="/admin/products/new?type=set">New set</Link>
+            </>
           )
         }
       />

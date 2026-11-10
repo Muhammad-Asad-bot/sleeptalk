@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/db/client";
 import { productImages, productPrices, products, setComponents, slugRedirects, stockMovements, variants } from "@/db/schema";
@@ -47,9 +47,12 @@ const productSchema = z.object({
         id: z.string().max(64).optional(),
         sku: z.string().trim().min(1, "Every variant needs a SKU").max(64),
         color: z.string().trim().min(1, "Every variant needs a colour").max(60),
-        colorHex: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Colour must be a hex value like #111111"),
+        // One hex, or "#upper,#lower" for a two-tone colour.
+        colorHex: z.string().regex(/^#[0-9a-fA-F]{6}(,#[0-9a-fA-F]{6})?$/, "Colour must be a hex value like #111111 (or two, for a two-tone colour)"),
         size: z.string().trim().min(1, "Every variant needs a size").max(20),
         initialStock: z.number().int().min(0).max(100000).optional(),
+        /** Saved variants: change typed on the product page (new count − count when the page loaded). */
+        stockDelta: z.number().int().min(-100000).max(100000).optional(),
         lowStockThreshold: z.number().int().min(0).max(1000),
         allowBackorder: z.boolean(),
         active: z.boolean(),
@@ -94,21 +97,24 @@ export async function saveProductAction(payload: ProductPayload): Promise<SavePr
   if (new Set(skus).size !== skus.length) return { ok: false, error: "Each variant SKU must be unique." };
 
   const db = await getDb();
-  const [slugTaken] = await db
-    .select({ id: products.id })
-    .from(products)
-    .where(data.id ? and(eq(products.slug, slug), ne(products.id, data.id)) : eq(products.slug, slug))
-    .limit(1);
+  // Independent checks run in parallel: each is a round trip to the database.
+  const [[slugTaken], clash, before] = await Promise.all([
+    db
+      .select({ id: products.id })
+      .from(products)
+      .where(data.id ? and(eq(products.slug, slug), ne(products.id, data.id)) : eq(products.slug, slug))
+      .limit(1),
+    skus.length
+      ? db.select({ sku: variants.sku, productId: variants.productId }).from(variants).where(inArray(variants.sku, skus))
+      : Promise.resolve([]),
+    data.id ? db.query.products.findFirst({ where: eq(products.id, data.id), with: { prices: true } }) : Promise.resolve(null),
+  ]);
   if (slugTaken) return { ok: false, error: `The URL slug "${slug}" is already used by another product.` };
-  if (skus.length) {
-    const clash = await db.select({ sku: variants.sku, productId: variants.productId }).from(variants).where(inArray(variants.sku, skus));
-    const foreign = clash.find((c) => c.productId !== data.id);
-    if (foreign) return { ok: false, error: `SKU ${foreign.sku} is already used by another product.` };
-  }
-
-  const before = data.id ? await db.query.products.findFirst({ where: eq(products.id, data.id), with: { prices: true } }) : null;
+  const foreign = clash.find((c) => c.productId !== data.id);
+  if (foreign) return { ok: false, error: `SKU ${foreign.sku} is already used by another product.` };
   if (data.id && !before) return { ok: false, error: "Product not found." };
 
+  const stockChanges: { sku: string; from: number; to: number }[] = [];
   const id = await db.transaction(async (tx) => {
     const values = {
       title: data.title,
@@ -170,8 +176,26 @@ export async function saveProductAction(payload: ProductPayload): Promise<SavePr
           active: v.active,
           position: i,
         };
-        if (v.id && existing.some((e) => e.id === v.id)) {
-          await tx.update(variants).set(fields).where(eq(variants.id, v.id));
+        const old = v.id ? existing.find((e) => e.id === v.id) : undefined;
+        if (old) {
+          // Only write sizes that actually changed — each update is a round trip.
+          const changed = (Object.keys(fields) as (keyof typeof fields)[]).some((k) => old[k] !== fields[k]);
+          if (changed) await tx.update(variants).set(fields).where(eq(variants.id, old.id));
+          if (v.stockDelta) {
+            // Apply the change as a delta (not an absolute count) so sales made while the page was
+            // open aren't overwritten, and log it like an Inventory adjustment. Never below zero.
+            const [current] = await tx.select({ stock: variants.stock }).from(variants).where(eq(variants.id, old.id)).for("update");
+            const delta = Math.max(v.stockDelta, -current.stock);
+            if (delta !== 0) {
+              const [updated] = await tx
+                .update(variants)
+                .set({ stock: sql`${variants.stock} + ${delta}` })
+                .where(eq(variants.id, old.id))
+                .returning({ stock: variants.stock });
+              await tx.insert(stockMovements).values({ variantId: old.id, delta, stockAfter: updated.stock, reason: "adjustment", note: "Changed on product page", userId: user.id });
+              stockChanges.push({ sku: fields.sku, from: current.stock, to: updated.stock });
+            }
+          }
         } else {
           const stock = v.initialStock ?? 0;
           const [nv] = await tx.insert(variants).values({ ...fields, productId, stock }).returning({ id: variants.id });
@@ -203,8 +227,11 @@ export async function saveProductAction(payload: ProductPayload): Promise<SavePr
     status: data.status,
     ...(before && before.status !== data.status ? { statusChange: [before.status, data.status] } : {}),
     ...(priceChanges.length ? { priceChanges } : {}),
+    ...(stockChanges.length ? { stockChanges } : {}),
   });
+  if (stockChanges.length) revalidatePath("/admin/inventory");
   revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${id}`);
   revalidatePath(`/products/${slug}`);
   return { ok: true, id };
 }

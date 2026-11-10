@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import type { CartLineInput } from "@/lib/cart-types";
 import type { OptionVariant, ProductOptions } from "@/lib/product-options";
-import { cn, sortSizes } from "@/lib/utils";
+import { cn, sortSizes, swatchBackground } from "@/lib/utils";
 
 export type PickerSelection = {
   colour: string | null;
@@ -173,15 +173,16 @@ export function VariantPicker({
                   onChange={() => onChange({ colour: c.name, sizes: selection.sizes })}
                   className="sr-only"
                 />
+                {/* Sold-out colours keep their real colours (so two-tones stay recognisable) with a strike line. */}
                 <span
-                  className={cn("size-7 rounded-full border border-ink/15", !c.available && "opacity-40")}
-                  style={
-                    c.name.includes("/")
-                      ? { background: `linear-gradient(180deg, #E8E0D0 50%, #141414 50%)` }
-                      : { background: c.hex }
-                  }
+                  className="relative size-7 overflow-hidden rounded-full border border-ink/15"
+                  style={{ background: swatchBackground(c.hex) }}
                   aria-hidden
-                />
+                >
+                  {!c.available ? (
+                    <span className="absolute left-1/2 top-1/2 h-px w-[140%] -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-sale shadow-[0_0_0_1px_rgba(255,255,255,0.7)]" />
+                  ) : null}
+                </span>
                 <span className="sr-only">
                   {c.name}
                   {c.available ? "" : " (sold out)"}

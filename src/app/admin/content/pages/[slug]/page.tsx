@@ -5,6 +5,7 @@ import { getDb } from "@/db/client";
 import { pages } from "@/db/schema";
 import { savePageAction } from "@/app/admin/_actions/content";
 import { abtn, adminInput, adminTextarea, AField, Card, Flash, PageHeader } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { requireStaff } from "@/lib/server/auth";
 
 export const metadata: Metadata = { title: "Edit page" };
@@ -43,7 +44,7 @@ export default async function EditPagePage({ params, searchParams }: Props) {
           <Card title="Status">
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="isPlaceholder" defaultChecked={p.isPlaceholder} className="size-4 accent-ink" /> Still placeholder copy</label>
           </Card>
-          <button type="submit" className={`${abtn("primary")} w-full`}>Save page</button>
+          <SubmitButton className={`${abtn("primary")} w-full`}>Save page</SubmitButton>
         </div>
       </form>
     </>

@@ -5,6 +5,7 @@ import { getDb } from "@/db/client";
 import { homeSections } from "@/db/schema";
 import { moveSectionAction, toggleSectionAction } from "@/app/admin/_actions/content";
 import { abtn, Badge, Card, Flash, PageHeader } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { requireStaff } from "@/lib/server/auth";
 import { SECTION_LABEL } from "@/components/admin/section-labels";
 
@@ -41,9 +42,9 @@ export default async function ContentPage({ searchParams }: { searchParams: Prom
               </div>
               {s.visible ? <Badge color="green">Shown</Badge> : <Badge>Hidden</Badge>}
               <div className="flex gap-1">
-                <form action={moveSectionAction}><input type="hidden" name="id" value={s.id} /><input type="hidden" name="dir" value="up" /><button type="submit" className={abtn("ghost", "sm")} disabled={i === 0} aria-label="Move up">↑</button></form>
-                <form action={moveSectionAction}><input type="hidden" name="id" value={s.id} /><input type="hidden" name="dir" value="down" /><button type="submit" className={abtn("ghost", "sm")} disabled={i === rows.length - 1} aria-label="Move down">↓</button></form>
-                <form action={toggleSectionAction}><input type="hidden" name="id" value={s.id} /><button type="submit" className={abtn("secondary", "sm")}>{s.visible ? "Hide" : "Show"}</button></form>
+                <form action={moveSectionAction}><input type="hidden" name="id" value={s.id} /><input type="hidden" name="dir" value="up" /><SubmitButton className={abtn("ghost", "sm")} disabled={i === 0} aria-label="Move up">↑</SubmitButton></form>
+                <form action={moveSectionAction}><input type="hidden" name="id" value={s.id} /><input type="hidden" name="dir" value="down" /><SubmitButton className={abtn("ghost", "sm")} disabled={i === rows.length - 1} aria-label="Move down">↓</SubmitButton></form>
+                <form action={toggleSectionAction}><input type="hidden" name="id" value={s.id} /><SubmitButton className={abtn("secondary", "sm")}>{s.visible ? "Hide" : "Show"}</SubmitButton></form>
                 <Link href={`/admin/content/sections/${s.id}`} className={abtn("primary", "sm")}>Edit</Link>
               </div>
             </li>

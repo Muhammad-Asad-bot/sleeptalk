@@ -5,6 +5,7 @@ import { getDb } from "@/db/client";
 import { products, variants } from "@/db/schema";
 import { adjustStockAction, updateVariantSettingsAction } from "@/app/admin/_actions/inventory";
 import { abtn, adminInput, adminSelect, AField, Badge, EmptyRow, FilterBar, Flash, inputSm, PageHeader, Pagination, Stat, Table, tdClass, thClass } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { requireStaff } from "@/lib/server/auth";
 import { pageParam } from "@/lib/server/admin";
 
@@ -54,7 +55,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
         <Stat label="Low stock" value={low} tone={low ? "warn" : undefined} />
         <Stat label="Sold out" value={out} tone={out ? "warn" : undefined} />
       </div>
-      <FilterBar>
+      <FilterBar clearHref={sp.q || sp.filter ? "/admin/inventory" : undefined}>
         <AField label="Search" className="w-64">
           <input name="q" defaultValue={sp.q} placeholder="Product, SKU or colour" className={adminInput} />
         </AField>
@@ -111,7 +112,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
                         <option value="adjustment">Correction</option>
                       </select>
                       <input name="note" placeholder="Note (optional)" maxLength={300} aria-label="Note" className={`${inputSm} w-[130px]`} />
-                      <button type="submit" className={abtn("primary", "sm")}>Update</button>
+                      <SubmitButton className={abtn("primary", "sm")}>Update</SubmitButton>
                     </form>
                   </td>
                   <td className={tdClass}>
@@ -128,7 +129,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
                       <label className="flex items-center gap-1">
                         <input type="checkbox" name="active" defaultChecked={v.active} className="size-3.5 accent-ink" /> Active
                       </label>
-                      <button type="submit" className={abtn("secondary", "sm")}>Save</button>
+                      <SubmitButton className={abtn("secondary", "sm")}>Save</SubmitButton>
                     </form>
                   </td>
                 </tr>

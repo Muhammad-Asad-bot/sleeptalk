@@ -45,6 +45,15 @@ async function connect(options: { migrate: boolean; autoSeed: boolean }): Promis
     return db;
   }
 
+  if (process.env.VERCEL) {
+    // Serverless filesystems are read-only (and wiped per instance), so the embedded
+    // database cannot work there. Fail with a clear message instead of an opaque crash.
+    throw new Error(
+      "DATABASE_URL is not set. On Vercel the embedded PGlite database can't be used — " +
+        "add a PostgreSQL connection string (e.g. Neon) as DATABASE_URL in the project's Environment Variables.",
+    );
+  }
+
   const { PGlite } = await import("@electric-sql/pglite");
   const { drizzle } = await import("drizzle-orm/pglite");
   const fs = await import("node:fs");

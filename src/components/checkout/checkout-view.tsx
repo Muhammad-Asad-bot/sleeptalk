@@ -313,7 +313,9 @@ export function CheckoutView({
               <p className="text-ash">
                 {testMode
                   ? "You'll be taken to a simulated payment page where you can approve or decline the test payment."
-                  : "You'll be redirected to our payment provider's secure page to pay. We never see or store your card details."}
+                  : market === "CA"
+                    ? "You'll be redirected to our payment provider's secure page to pay by card or straight from your Canadian bank account. We never see or store your card or bank details. Bank payments take 3–5 business days to clear; your order ships once they do."
+                    : "You'll be redirected to our payment provider's secure page to pay. We never see or store your card details."}
               </p>
               <dl className="grid gap-3 bg-paper p-4 text-xs sm:grid-cols-2">
                 <div><dt className="text-stone">Contact</dt><dd>{email}</dd></div>

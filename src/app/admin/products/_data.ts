@@ -4,14 +4,19 @@ import { getDb } from "@/db/client";
 import { categories, products } from "@/db/schema";
 import type { EditorInitial } from "@/components/admin/product-editor";
 import { MARKET_CODES, minorToInput } from "@/lib/markets";
+import { getMarketConfigs, getSettings } from "@/lib/server/settings";
 
 export async function editorOptions() {
   const db = await getDb();
-  const [cats, all] = await Promise.all([
+  const [cats, all, marketConfigs, settings] = await Promise.all([
     db.select({ id: categories.id, name: categories.name }).from(categories).orderBy(asc(categories.position)),
     db.select({ id: products.id, title: products.title, type: products.type }).from(products).orderBy(asc(products.title)),
+    getMarketConfigs(),
+    getSettings(),
   ]);
-  return { categories: cats, componentOptions: all.filter((p) => p.type === "standard") };
+  // Only show price fields for markets the store sells in (Shipping & markets → "Selling here").
+  const markets = marketConfigs.filter((m) => m.active).map((m) => m.code);
+  return { categories: cats, componentOptions: all.filter((p) => p.type === "standard"), markets, colourLibrary: settings.colours.list };
 }
 
 export const EMPTY_PRODUCT: EditorInitial = {

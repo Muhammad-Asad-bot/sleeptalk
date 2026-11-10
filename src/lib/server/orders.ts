@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, gte, or, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, or, sql } from "drizzle-orm";
 import { getDb, type Db } from "@/db/client";
 import {
   discounts,
@@ -77,6 +77,10 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   const [existing] = await db.select().from(orders).where(eq(orders.checkoutToken, input.checkoutToken)).limit(1);
   if (existing) {
     if (existing.status === "paid") {
+      return { ok: true, orderNumber: existing.number, redirectUrl: `/order-confirmation/${existing.number}?t=${existing.accessToken}` };
+    }
+    if (existing.status === "pending_payment" && existing.bankDebitSubmittedAt) {
+      // A bank payment is already on its way — never open a second payment session.
       return { ok: true, orderNumber: existing.number, redirectUrl: `/order-confirmation/${existing.number}?t=${existing.accessToken}` };
     }
     if (existing.status === "pending_payment") {
@@ -241,12 +245,37 @@ export async function markOrderPaid(orderId: string, evidence: { ref?: string | 
   return outcome;
 }
 
+/**
+ * A Canadian bank debit was submitted on Stripe (VERIFIED webhook) but has not cleared yet.
+ * The order stays awaiting payment with its stock reserved; the customer is told it takes a few days.
+ */
+export async function markBankDebitSubmitted(orderId: string, ref: string | null) {
+  const db = await getDb();
+  const note = `\n[${new Date().toISOString()}] Bank debit (pre-authorized debit) submitted — waiting for it to clear. Do not ship yet.`;
+  const [order] = await db
+    .update(orders)
+    .set({
+      bankDebitSubmittedAt: new Date(),
+      paymentRef: ref ?? sql`${orders.paymentRef}`,
+      internalNotes: sql`ltrim(${orders.internalNotes} || ${note})`,
+    })
+    .where(and(eq(orders.id, orderId), eq(orders.status, "pending_payment"), isNull(orders.bankDebitSubmittedAt)))
+    .returning();
+  if (!order) return false; // already recorded, or no longer pending
+  await sendEmail({
+    to: order.email,
+    subject: `SLEEP TALK — order ${order.number} received, bank payment processing`,
+    text: `Thanks for your order.\n\nYou paid for order ${order.number} (${formatMoney(order.total, order.market)}) from your bank account. Bank payments usually take 3–5 business days to clear. We'll email you as soon as it's confirmed, and your order ships after that.\n\nView your order: ${absoluteUrl(`/order-confirmation/${order.number}?t=${order.accessToken}`)}\n`,
+  }).catch((e) => console.error("[email] bank debit notice failed", e));
+  return true;
+}
+
 /** Marks a pending order failed/cancelled and releases its reserved stock. Idempotent. */
 export async function markOrderFailed(orderId: string, reason: string, status: "payment_failed" | "cancelled" = "payment_failed") {
   const db = await getDb();
-  return db.transaction(async (tx) => {
+  const failed = await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).for("update");
-    if (!order || order.status !== "pending_payment") return false;
+    if (!order || order.status !== "pending_payment") return null;
     const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, order.id));
     if (!order.stockReleased) {
       for (const [variantId, qty] of aggregate(items.flatMap(itemDemand))) {
@@ -261,8 +290,18 @@ export async function markOrderFailed(orderId: string, reason: string, status: "
         internalNotes: `${order.internalNotes}\n[${new Date().toISOString()}] ${status}: ${reason}`.trim(),
       })
       .where(eq(orders.id, order.id));
-    return true;
+    return order;
   });
+  if (!failed) return false;
+  if (failed.bankDebitSubmittedAt && status === "payment_failed") {
+    // The customer left checkout days ago believing they'd paid — tell them it bounced.
+    await sendEmail({
+      to: failed.email,
+      subject: `SLEEP TALK — payment for order ${failed.number} didn't go through`,
+      text: `Your bank payment for order ${failed.number} (${formatMoney(failed.total, failed.market)}) was not completed by your bank, so the order has been cancelled and you have not been charged.\n\nIf you'd still like the items, please place the order again: ${absoluteUrl("/cart")}\n`,
+    }).catch((e) => console.error("[email] bank debit failure notice failed", e));
+  }
+  return true;
 }
 
 /** Shopper returned from the provider without paying: expire the session, then release stock. */

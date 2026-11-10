@@ -6,6 +6,7 @@ import { collections, homeSections } from "@/db/schema";
 import { saveSectionAction } from "@/app/admin/_actions/content";
 import { UploadField } from "@/components/admin/upload-field";
 import { abtn, adminInput, adminSelect, adminTextarea, AField, Card, Flash, PageHeader } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { requireStaff } from "@/lib/server/auth";
 import { SECTION_LABEL } from "@/components/admin/section-labels";
 
@@ -95,7 +96,7 @@ export default async function SectionEditPage({ params, searchParams }: Props) {
         <Card>
           <div className="grid gap-4 md:grid-cols-2">{fields}</div>
           <div className="mt-6 flex gap-3">
-            <button type="submit" className={abtn("primary")}>Save section</button>
+            <SubmitButton className={abtn("primary")}>Save section</SubmitButton>
             <a href="/" target="_blank" className={abtn("ghost")}>Preview homepage</a>
           </div>
         </Card>

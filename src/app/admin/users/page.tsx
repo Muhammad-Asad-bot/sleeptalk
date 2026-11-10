@@ -4,6 +4,7 @@ import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 import { updateStaffAction } from "@/app/admin/_actions/settings";
 import { abtn, Badge, Flash, inputSm, PageHeader, Table, tdClass, thClass } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { requireOwner } from "@/lib/server/auth";
 import { formatDateTime } from "@/lib/utils";
 
@@ -37,7 +38,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                     <option value="customer">Remove access</option>
                   </select>
                   <label className="flex items-center gap-1"><input type="checkbox" name="disabled" defaultChecked={u.disabled} className="size-3.5 accent-ink" /> Disabled</label>
-                  <button type="submit" className={abtn("secondary", "sm")}>Save</button>
+                  <SubmitButton className={abtn("secondary", "sm")}>Save</SubmitButton>
                 </form>
               </td>
             </tr>

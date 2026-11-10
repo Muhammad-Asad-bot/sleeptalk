@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { setProductStatusAction } from "@/app/admin/_actions/products";
 import { ProductEditor } from "@/components/admin/product-editor";
 import { abtn, Badge, Flash, PageHeader } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { requireStaff } from "@/lib/server/auth";
 import { editorOptions, loadEditorProduct } from "../_data";
 
@@ -33,15 +34,19 @@ export default async function EditProductPage({ params, searchParams }: Props) {
             <form action={setProductStatusAction}>
               <input type="hidden" name="id" value={product.id} />
               <input type="hidden" name="status" value={product.status === "archived" ? "draft" : "archived"} />
-              <button type="submit" className={abtn(product.status === "archived" ? "secondary" : "danger")}>
+              <SubmitButton
+                className={abtn(product.status === "archived" ? "secondary" : "danger")}
+                confirm={product.status === "archived" ? undefined : "Archive this product? It will be hidden from the store (you can restore it later)."}
+              >
                 {product.status === "archived" ? "Restore as draft" : "Archive"}
-              </button>
+              </SubmitButton>
             </form>
           </>
         }
       />
       <Flash ok={flash.ok} error={flash.error} />
-      <ProductEditor key={JSON.stringify(product).length + product.status} initial={product} {...options} />
+      {/* Remount with fresh data (incl. stock) after every save. */}
+      <ProductEditor key={JSON.stringify(product)} initial={product} {...options} />
     </>
   );
 }

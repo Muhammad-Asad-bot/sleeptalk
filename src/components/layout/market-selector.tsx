@@ -37,6 +37,9 @@ export function MarketSelector({
     };
   }, [open]);
 
+  // Selling in one country only: nothing to choose.
+  const single = available.length <= 1;
+
   const choose = (code: MarketCode) => {
     setOpen(false);
     if (code === market) return;
@@ -45,6 +48,8 @@ export function MarketSelector({
       router.refresh();
     });
   };
+
+  if (single) return null;
 
   if (variant === "drawer" || variant === "footer") {
     return (

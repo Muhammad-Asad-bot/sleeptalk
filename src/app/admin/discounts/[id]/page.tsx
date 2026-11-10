@@ -5,6 +5,7 @@ import { getDb } from "@/db/client";
 import { categories, collections, discounts, products } from "@/db/schema";
 import { saveDiscountAction } from "@/app/admin/_actions/sales";
 import { abtn, adminInput, adminSelect, AField, Card, Flash, PageHeader } from "@/components/admin/ui";
+import { SubmitButton } from "@/components/admin/client";
 import { MARKETS, MARKET_CODES, minorToInput } from "@/lib/markets";
 import { requireStaff } from "@/lib/server/auth";
 
@@ -94,7 +95,7 @@ export default async function DiscountEditPage({ params, searchParams }: Props) 
               <AField label="Total uses (optional)"><input type="number" min={1} name="usageLimit" defaultValue={d?.usageLimit ?? ""} className={adminInput} /></AField>
             </div>
           </Card>
-          <button type="submit" className={`${abtn("primary")} w-full`}>{d ? "Save code" : "Create code"}</button>
+          <SubmitButton className={`${abtn("primary")} w-full`}>{d ? "Save code" : "Create code"}</SubmitButton>
         </div>
       </form>
     </>

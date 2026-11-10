@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FULFILMENT_LABEL, OrderDetail } from "@/components/account/order-detail";
-import { PaidOrderEffects, PendingRefresher } from "@/components/checkout/order-effects";
+import { PaidOrderEffects, PendingRefresher, SubmittedOrderEffects } from "@/components/checkout/order-effects";
 import { buttonClass } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/server/auth";
 import { getOrderForViewer } from "@/lib/server/orders";
@@ -19,6 +19,28 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
   const user = await getCurrentUser();
   const order = await getOrderForViewer(orderNumber, t, user?.id ?? null);
   if (!order) notFound();
+
+  // Canadian bank debit submitted: confirmed by the bank in a few days, not seconds.
+  if (order.status === "pending_payment" && order.bankDebitSubmittedAt) {
+    return (
+      <div className="container-site pt-10 md:pt-16">
+        <SubmittedOrderEffects />
+        <div className="mx-auto max-w-3xl">
+          <p className="label text-stone">Order {order.number}</p>
+          <h1 className="display mt-3 text-5xl md:text-7xl">Bank payment processing</h1>
+          <p className="mt-4 max-w-lg text-sm text-ash">
+            Thanks — we&apos;ve received your order. Payments from a bank account usually take <strong>3–5 business days</strong> to clear. We&apos;ll email <strong>{order.email}</strong> as soon as it&apos;s confirmed, and your order ships after that. You don&apos;t need to pay again.
+          </p>
+          <div className="mt-10">
+            <OrderDetail order={order} />
+          </div>
+          <div className="mt-12">
+            <Link href="/shop" className={buttonClass("primary", "lg")}>Continue shopping</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Confirmation is only shown for a payment verified server-side.
   if (order.status === "pending_payment") {

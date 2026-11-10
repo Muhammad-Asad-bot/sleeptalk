@@ -70,6 +70,9 @@ export async function cancelOrderAction(formData: FormData) {
   const user = await requireStaff();
   const id = str(formData, "id", 64);
   const path = `/admin/orders/${id}`;
+  const db = await getDb();
+  const [current] = await db.select({ bank: orders.bankDebitSubmittedAt }).from(orders).where(eq(orders.id, id)).limit(1);
+  if (current?.bank) back(path, { error: "A bank payment is already on its way for this order. Wait for Stripe to confirm or fail it." });
   const done = await markOrderFailed(id, `cancelled by ${user.email}`, "cancelled");
   if (!done) back(path, { error: "Only orders awaiting payment can be cancelled here." });
   await audit(user, "order.cancelled", "order", id, {});
