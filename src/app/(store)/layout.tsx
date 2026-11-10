@@ -19,8 +19,9 @@ import { MARKETS, type MarketCode } from "@/lib/markets";
 async function freeShippingText(markets: MarketCode[]) {
   const parts: string[] = [];
   const offered: MarketCode[] = [];
-  for (const code of markets) {
-    const rates = await getShippingRates(code);
+  const allRates = await Promise.all(markets.map((code) => getShippingRates(code)));
+  for (const [i, code] of markets.entries()) {
+    const rates = allRates[i];
     const thresholds = rates.map((r) => r.freeOver).filter((v): v is number => v != null);
     if (!thresholds.length) continue;
     const min = Math.min(...thresholds);
@@ -42,9 +43,8 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     getCategories(),
     getMarketConfigs(),
   ]);
-  const collections = await getLiveCollections(market);
   const activeMarkets = marketConfigs.filter((m) => m.active).map((m) => m.code);
-  const shippingNote = await freeShippingText(activeMarkets);
+  const [collections, shippingNote] = await Promise.all([getLiveCollections(market), freeShippingText(activeMarkets)]);
 
   return (
     <StoreProvider market={market} isAuthed={!!user}>

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { refreshStorefront } from "@/lib/server/store-cache";
 import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { contactMessages, discounts, reviews, sessions, users, type MarketAmounts } from "@/db/schema";
@@ -97,6 +98,7 @@ export async function moderateReviewAction(formData: FormData) {
   await db.update(reviews).set({ status: status as "approved", reported: status === "approved" ? false : undefined, adminNote: str(formData, "adminNote", 500) }).where(eq(reviews.id, id));
   await audit(user, `review.${status}`, "review", id, {});
   revalidatePath("/admin/reviews");
+  refreshStorefront();
   back(ret.startsWith("/admin") ? ret : "/admin/reviews", { ok: `Review ${status}.` });
 }
 

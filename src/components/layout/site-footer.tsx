@@ -6,6 +6,7 @@ import { CookiePreferencesLink } from "./cookie-banner";
 import { MarketSelector } from "./market-selector";
 import { NewsletterForm } from "./newsletter-form";
 import { SocialLinks } from "./social-links";
+import { telHref } from "@/lib/utils";
 
 const HELP = [
   { href: "/contact", label: "Contact" },
@@ -62,8 +63,10 @@ export function SiteFooter({ settings, market, markets }: { settings: SettingsMa
             <h2 className="label mb-5 text-canvas/60">Contact</h2>
             <ul className="space-y-2 text-sm text-canvas/80">
               <li><a className="link-underline" href={`mailto:${settings.store.supportEmail}`}>{settings.store.supportEmail}</a></li>
-              <li>{settings.store.phone}</li>
-              {settings.store.demoMode ? <li className="text-xs text-canvas/50">Placeholder contact details (demo)</li> : null}
+              {settings.store.phone ? (
+                <li><a className="link-underline" href={`tel:${telHref(settings.store.phone)}`}>{settings.store.phone}</a></li>
+              ) : null}
+              {settings.store.address ? <li className="whitespace-pre-line text-canvas/70">{settings.store.address}</li> : null}
             </ul>
           </div>
           <SocialLinks social={settings.social} showPlaceholders={settings.store.demoMode} />

@@ -3,6 +3,7 @@ import { ContactForm } from "@/components/content/contact-form";
 import { Breadcrumbs } from "@/components/listing/listing-page";
 import { Markdown } from "@/lib/markdown";
 import { getPage, getSettings } from "@/lib/server/settings";
+import { telHref } from "@/lib/utils";
 
 export const generateMetadata = () => contentMetadata("contact");
 
@@ -29,18 +30,19 @@ export default async function ContactPage({ searchParams }: Props) {
             </div>
             <div>
               <dt className="label text-stone">Phone</dt>
-              <dd className="mt-1">{store.phone}</dd>
+              <dd className="mt-1"><a href={`tel:${telHref(store.phone)}`} className="underline">{store.phone}</a></dd>
             </div>
             <div>
               <dt className="label text-stone">Address</dt>
-              <dd className="mt-1">{store.address}</dd>
+              <dd className="mt-1 whitespace-pre-line">{store.address}</dd>
             </div>
-            <div>
-              <dt className="label text-stone">Hours</dt>
-              <dd className="mt-1">{store.businessHours}</dd>
-            </div>
+            {store.businessHours ? (
+              <div>
+                <dt className="label text-stone">Hours</dt>
+                <dd className="mt-1">{store.businessHours}</dd>
+              </div>
+            ) : null}
           </dl>
-          {store.demoMode ? <p className="mt-6 text-xs text-stone">Placeholder contact details shown in demo mode.</p> : null}
         </div>
         <div className="lg:col-span-7 lg:col-start-6">
           {topic === "refund" ? (

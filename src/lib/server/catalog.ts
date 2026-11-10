@@ -13,6 +13,7 @@ import {
 } from "@/db/schema";
 import type { MarketCode } from "@/lib/markets";
 import { sortSizes } from "@/lib/utils";
+import { storeCached } from "./store-cache";
 
 /*
  * Catalogue access. A boutique label's catalogue (tens to low hundreds of products) is loaded
@@ -110,7 +111,7 @@ export function setAvailableInColour(components: CatalogComponent[], colour: str
   return components.every((c) => c.variants.some((v) => v.color === colour && variantInStock(v)));
 }
 
-export const loadCatalog = cache(async (market: MarketCode): Promise<CatalogProduct[]> => {
+async function buildCatalog(market: MarketCode): Promise<CatalogProduct[]> {
   const db = await getDb();
   const rows = await db.query.products.findMany({
     where: eq(products.status, "active"),
@@ -196,7 +197,16 @@ export const loadCatalog = cache(async (market: MarketCode): Promise<CatalogProd
     });
   }
   return result;
-});
+}
+
+/**
+ * Catalogue for browsing pages (listings, product pages, search, menus): cached across requests
+ * and refreshed on admin saves, plus every 60s so stock levels from new orders show up.
+ */
+export const loadCatalog = cache(storeCached(buildCatalog, "catalog", 60));
+
+/** Uncached catalogue for cart pricing and checkout, which must always see current prices and stock. */
+export const loadCatalogFresh = cache(buildCatalog);
 
 /** Units in stock: sum of active variants; for sets, how many complete sets the pieces allow. */
 export function availableUnits(p: CatalogProduct) {
@@ -387,10 +397,12 @@ export async function getListing(opts: {
 
 /* ───────────── Categories ───────────── */
 
-export const getCategories = cache(async () => {
-  const db = await getDb();
-  return db.select().from(categories).where(eq(categories.visible, true)).orderBy(asc(categories.position));
-});
+export const getCategories = cache(
+  storeCached(async () => {
+    const db = await getDb();
+    return db.select().from(categories).where(eq(categories.visible, true)).orderBy(asc(categories.position));
+  }, "categories"),
+);
 
 export async function getCategoryBySlug(slug: string) {
   const all = await getCategories();
@@ -416,13 +428,18 @@ export function productMatchesRules(p: CatalogProduct, rules: CollectionRules) {
   return checks.length > 0 && checks.every(Boolean);
 }
 
-export const getCollectionsWithMembers = cache(async (market: MarketCode) => {
+const collectionRows = storeCached(async () => {
   const db = await getDb();
-  const [rows, manual, catalog] = await Promise.all([
+  const [rows, manual] = await Promise.all([
     db.select().from(collections).orderBy(asc(collections.position)),
     db.select().from(collectionProducts).orderBy(asc(collectionProducts.position)),
-    loadCatalog(market),
   ]);
+  return { rows, manual };
+}, "collections");
+
+/** `live` is worked out per request so scheduled publish/unpublish times apply on time. */
+export const getCollectionsWithMembers = cache(async (market: MarketCode) => {
+  const [{ rows, manual }, catalog] = await Promise.all([collectionRows(), loadCatalog(market)]);
   return rows.map((c) => {
     const productIds =
       c.mode === "manual"
@@ -502,7 +519,7 @@ export async function getSetRelations(product: CatalogProduct, market: MarketCod
   return { sets, pieces };
 }
 
-export async function getProductReviews(productId: string) {
+export const getProductReviews = storeCached(async (productId: string) => {
   const db = await getDb();
   const rows = await db
     .select()
@@ -513,7 +530,7 @@ export async function getProductReviews(productId: string) {
   const average = count ? rows.reduce((s, r) => s + r.rating, 0) / count : 0;
   const distribution = [5, 4, 3, 2, 1].map((star) => ({ star, count: rows.filter((r) => r.rating === star).length }));
   return { reviews: rows, count, average, distribution };
-}
+}, "reviews");
 
 export async function getCardsByIds(ids: string[], market: MarketCode) {
   const catalog = await loadCatalog(market);

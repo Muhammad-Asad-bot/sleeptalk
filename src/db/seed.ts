@@ -17,6 +17,46 @@ import {
 } from "@/content/demo-assets";
 import { hashPassword } from "@/lib/password";
 
+/** About page copy — exported so it can be pushed to an existing database without re-seeding. */
+export const ABOUT_BODY = `## Say it without saying it.
+
+Some things are too heavy to say out loud. So we wear them instead.
+
+SLEEP TALK is a unisex streetwear label for the thoughts that surface at 3am: the half-finished sentences, the names you almost said, the feelings you never quite found the words for. Every piece is a way of saying something without having to explain it.
+
+> Say less. Mean more.
+
+## Quiet by design
+
+No shouting logos. No slogans fighting for attention across the street. We build around clean lines, considered colour and a fit that sits exactly right. These are clothes that speak softly and still get noticed.
+
+Wear them on the last train home, in the studio, at the corner shop, or on the long walk back when the city finally goes quiet.
+
+## The emblem
+
+A circle, drawn over and over, until it holds a crescent moon. Hand-drawn and imperfect on purpose, it is the heart of the label and the mark on our signature colour-block hoodie. It's a small sign for anyone who has ever lain awake with too much on their mind.
+
+## Made to be lived in
+
+Hoodies, tees, shirts, jackets, trousers and tracksuits, designed for everyday rotation rather than one-off wear. Every piece is unisex, cut to be worn your way: sized up for an oversized drape, or true to size for a sharper line. Not sure? Our [Size Guide](/size-guide) has you covered.
+
+## What we stand for
+
+- **Fewer, better pieces.** We release in considered drops, not endless noise.
+- **Unisex by default.** Good clothes don't need a label telling you who they're for.
+- **Built for the everyday.** Pieces you reach for again and again, season after season.
+- **Feeling first.** If it doesn't mean something, we don't make it.
+
+## From the UK to Canada
+
+We ship across the United Kingdom and Canada, with prices shown in pounds and Canadian dollars so you always know exactly what you're paying. Find delivery options on our [Shipping](/shipping) page.
+
+## Stay up late with us
+
+Join the newsletter for early access to drops and restocks, and follow us on [Instagram](https://www.instagram.com/sleeptalkofficial) and [TikTok](https://www.tiktok.com/@sleeptallk1) for what we're working on next.
+
+Sleep on it. Then say it without saying it.`;
+
 type Colour = { name: string; hex: string; cw: DemoColourway; code: string };
 const C: Record<string, Colour> = {
   black: { name: "Black", hex: "#141414", cw: "black", code: "BLK" },
@@ -477,19 +517,7 @@ const PAGES: { slug: string; title: string; body: string }[] = [
   {
     slug: "about",
     title: "About SLEEP TALK",
-    body: `## Say it without saying it.
-
-SLEEP TALK is a unisex streetwear label built around the things we mean but never quite say out loud. The hand-drawn orbit, the crescent moon and the quiet serif wordmark are the starting point for every piece.
-
-> [Placeholder brand story — the client will supply final copy.]
-
-## The emblem
-
-A circle drawn over and over until it holds a crescent moon. It is the mark on our signature colour-block hoodie and the centre of the label.
-
-## Made for the UK and Canada
-
-We currently ship to the United Kingdom and Canada. Delivery details are set out on our Shipping page once carriers are confirmed.`,
+    body: ABOUT_BODY,
   },
   {
     slug: "faq",
@@ -636,9 +664,7 @@ Only set if you accept them in the cookie banner. You can change your choice any
   {
     slug: "contact",
     title: "Contact us",
-    body: `Questions about an order, sizing or anything else? Send us a message and we'll get back to you.
-
-> [Placeholder contact details are shown in demo mode. The client will supply official support details.]`,
+    body: `Questions about an order, sizing or anything else? Send us a message and we'll get back to you.`,
   },
 ];
 

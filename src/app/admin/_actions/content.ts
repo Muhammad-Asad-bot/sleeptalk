@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { refreshStorefront } from "@/lib/server/store-cache";
 import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { homeSections, pages } from "@/db/schema";
@@ -28,6 +29,7 @@ export async function moveSectionAction(formData: FormData) {
   });
   await audit(user, "homepage.reordered", "home_section", id, { type: rows[i].type, dir });
   revalidatePath("/");
+  refreshStorefront();
   back("/admin/content", { ok: "Homepage order updated." });
 }
 
@@ -40,6 +42,7 @@ export async function toggleSectionAction(formData: FormData) {
   await db.update(homeSections).set({ visible: !s.visible }).where(eq(homeSections.id, id));
   await audit(user, s.visible ? "homepage.section_hidden" : "homepage.section_shown", "home_section", id, { type: s.type });
   revalidatePath("/");
+  refreshStorefront();
   back("/admin/content", { ok: `Section ${s.visible ? "hidden" : "shown"}.` });
 }
 
@@ -92,6 +95,7 @@ export async function saveSectionAction(formData: FormData) {
   await db.update(homeSections).set({ data }).where(eq(homeSections.id, id));
   await audit(user, "homepage.section_updated", "home_section", id, { type: s.type });
   revalidatePath("/");
+  refreshStorefront();
   back(path, { ok: "Section saved. Changes are live on the homepage." });
 }
 
@@ -118,6 +122,7 @@ export async function savePageAction(formData: FormData) {
     .where(eq(pages.slug, slug));
   await audit(user, "page.updated", "page", slug, { title });
   revalidatePath(`/${slug}`);
+  refreshStorefront();
   back(path, { ok: "Page saved." });
 }
 
@@ -136,6 +141,7 @@ export async function saveAnnouncementAction(formData: FormData) {
   await saveSetting("announcement", value);
   await audit(user, "settings.announcement_updated", "settings", "announcement", { messages: value.messages.length, enabled: value.enabled });
   revalidatePath("/", "layout");
+  refreshStorefront();
   back("/admin/content/announcement", { ok: "Announcement bar saved." });
 }
 
@@ -152,5 +158,6 @@ export async function saveSocialAction(formData: FormData) {
   await saveSetting("social", value);
   await audit(user, "settings.social_updated", "settings", "social", value);
   revalidatePath("/", "layout");
+  refreshStorefront();
   back("/admin/social-links", { ok: "Social links saved. Icons without a link are hidden once demo mode is off." });
 }

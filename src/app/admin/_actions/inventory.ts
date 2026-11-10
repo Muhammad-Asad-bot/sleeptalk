@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { refreshStorefront } from "@/lib/server/store-cache";
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { stockMovements, variants } from "@/db/schema";
@@ -53,6 +54,7 @@ export async function adjustStockAction(formData: FormData) {
   if ("error" in result) back(path, { error: result.error });
   await audit(user, "inventory.adjusted", "variant", variantId, { ...result, mode, reason, note });
   revalidatePath("/admin/inventory");
+  refreshStorefront();
   back(path, { ok: `${result.sku}: ${result.from} → ${result.to}` });
 }
 
@@ -75,5 +77,6 @@ export async function updateVariantSettingsAction(formData: FormData) {
     active: [v.active, active],
   });
   revalidatePath("/admin/inventory");
+  refreshStorefront();
   back(path, { ok: `${v.sku} settings saved.` });
 }

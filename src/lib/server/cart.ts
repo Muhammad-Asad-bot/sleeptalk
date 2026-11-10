@@ -11,7 +11,7 @@ import {
   type ShippingOption,
 } from "@/lib/pricing";
 import { cartLineKey, type CartLineInput, type CartQuote, type QuoteComponent, type QuoteLine } from "@/lib/cart-types";
-import { collectionMembership, loadCatalog, type CatalogProduct } from "./catalog";
+import { collectionMembership, loadCatalogFresh, type CatalogProduct } from "./catalog";
 import { getMarketConfig, getShippingRates } from "./settings";
 
 export async function findDiscount(code: string | null | undefined): Promise<DiscountRule | null> {
@@ -58,7 +58,7 @@ export async function resolveCart(input: {
   shippingRateId?: string | null;
 }): Promise<CartQuote> {
   const [catalog, membership, rates, marketConfig] = await Promise.all([
-    loadCatalog(input.market),
+    loadCatalogFresh(input.market),
     collectionMembership(input.market),
     getShippingRates(input.market),
     getMarketConfig(input.market),

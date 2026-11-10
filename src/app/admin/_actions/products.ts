@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { refreshStorefront } from "@/lib/server/store-cache";
 import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/db/client";
@@ -233,6 +234,7 @@ export async function saveProductAction(payload: ProductPayload): Promise<SavePr
   revalidatePath("/admin/products");
   revalidatePath(`/admin/products/${id}`);
   revalidatePath(`/products/${slug}`);
+  refreshStorefront();
   return { ok: true, id };
 }
 
@@ -248,4 +250,5 @@ export async function setProductStatusAction(formData: FormData) {
   await audit(user, "product.status_changed", "product", id, { title: p.title, from: p.status, to: status });
   revalidatePath("/admin/products");
   revalidatePath(`/admin/products/${id}`);
+  refreshStorefront();
 }

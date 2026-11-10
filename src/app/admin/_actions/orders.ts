@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { refreshStorefront } from "@/lib/server/store-cache";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { fulfillmentStatusEnum, orders } from "@/db/schema";
@@ -77,6 +78,7 @@ export async function cancelOrderAction(formData: FormData) {
   if (!done) back(path, { error: "Only orders awaiting payment can be cancelled here." });
   await audit(user, "order.cancelled", "order", id, {});
   revalidatePath(path);
+  refreshStorefront();
   back(path, { ok: "Order cancelled and stock released." });
 }
 
@@ -91,5 +93,6 @@ export async function refundOrderAction(formData: FormData) {
   if (!result.ok) back(path, { error: result.error ?? "Refund failed." });
   await audit(user, "order.refunded", "order", id, { restock });
   revalidatePath(path);
+  refreshStorefront();
   back(path, { ok: restock ? "Refunded and items returned to stock." : "Refunded." });
 }

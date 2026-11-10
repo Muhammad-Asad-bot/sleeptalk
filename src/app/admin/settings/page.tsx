@@ -26,7 +26,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               <AField label="Phone"><input name="phone" defaultValue={store.phone} className={adminInput} /></AField>
             </div>
             <AField label="Business address"><textarea name="address" defaultValue={store.address} className={adminTextarea} /></AField>
-            <AField label="Support hours"><input name="businessHours" defaultValue={store.businessHours} className={adminInput} /></AField>
+            <AField label="Support hours" hint="Leave empty to hide hours on the Contact page"><input name="businessHours" defaultValue={store.businessHours} className={adminInput} /></AField>
             <UploadField name="logoDark" defaultValue={store.logoDark} label="Wordmark logo — dark (for light backgrounds)" />
             <UploadField name="logoLight" defaultValue={store.logoLight} label="Wordmark logo — light (for dark backgrounds)" />
           </div>

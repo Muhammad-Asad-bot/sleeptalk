@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { refreshStorefront } from "@/lib/server/store-cache";
 import { and, eq, ne, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { categories, collectionProducts, collections, type CollectionRules } from "@/db/schema";
@@ -34,6 +35,7 @@ export async function saveCategoryAction(formData: FormData) {
   else await db.insert(categories).values(values);
   await audit(user, id ? "category.updated" : "category.created", "category", id || slug, { name, slug });
   revalidatePath("/admin/categories");
+  refreshStorefront();
   back("/admin/categories", { ok: `Category “${name}” saved.` });
 }
 
@@ -88,6 +90,7 @@ export async function saveCollectionAction(formData: FormData) {
   });
   await audit(user, id ? "collection.updated" : "collection.created", "collection", savedId, { title, mode, products: productIds.length });
   revalidatePath("/admin/collections");
+  refreshStorefront();
   back(`/admin/collections/${savedId}`, { ok: "Collection saved." });
 }
 
@@ -100,6 +103,7 @@ export async function deleteCollectionAction(formData: FormData) {
   await db.delete(collections).where(eq(collections.id, id));
   await audit(user, "collection.deleted", "collection", id, { title: c.title });
   revalidatePath("/admin/collections");
+  refreshStorefront();
   back("/admin/collections", { ok: `Deleted “${c.title}”.` });
 }
 
@@ -128,6 +132,7 @@ export async function saveColourLibraryAction(list: LibraryColour[]): Promise<{ 
   await saveSetting("colours", { list: clean });
   await audit(user, "colours.updated", "settings", "colours", { count: clean.length });
   revalidatePath("/admin/colours");
+  refreshStorefront();
   return { ok: true };
 }
 
@@ -142,6 +147,7 @@ export async function addLibraryColourAction(colour: LibraryColour): Promise<{ o
   await saveSetting("colours", { list });
   await audit(user, "colours.added", "settings", "colours", clean);
   revalidatePath("/admin/colours");
+  refreshStorefront();
   return { ok: true, list };
 }
 
@@ -158,5 +164,6 @@ export async function quickCreateCategoryAction(rawName: string): Promise<{ ok: 
   const [created] = await db.insert(categories).values({ name, slug, position: max + 1, visible: true }).returning({ id: categories.id, name: categories.name });
   await audit(user, "category.created", "category", created.id, { name, slug, from: "product editor" });
   revalidatePath("/admin/categories");
+  refreshStorefront();
   return { ok: true, ...created };
 }

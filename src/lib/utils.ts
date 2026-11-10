@@ -19,6 +19,12 @@ export function absoluteUrl(path = "/") {
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+/** Phone number as a `tel:` target: digits with a leading "+", e.g. "+1 (647) 512-6054" → "+16475126054". */
+export function telHref(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  return phone.trim().startsWith("+") ? `+${digits}` : digits;
+}
+
 export function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return `${count} ${count === 1 ? singular : plural}`;
 }

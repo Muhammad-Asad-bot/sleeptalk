@@ -60,19 +60,19 @@ export const DEFAULT_SETTINGS: SettingsMap = {
   store: {
     name: "SLEEP TALK",
     motto: "SAY IT WITHOUT SAYING IT.",
-    supportEmail: "support@sleeptalk.example",
-    phone: "+44 0000 000000",
-    address: "Business address to be confirmed",
-    businessHours: "Support hours to be confirmed",
+    supportEmail: "sleeptalktoronto@proton.me",
+    phone: "+1 (647) 512-6054",
+    address: "30 Kidd Terr, North York ON M3J 3S8, Canada",
+    businessHours: "",
     demoMode: true,
     logoLight: "/brand/wordmark-light.png",
     logoDark: "/brand/wordmark-dark.png",
   },
   social: {
-    // Empty until the client supplies official profile URLs — empty links are hidden.
-    instagram: "",
-    tiktok: "",
-    facebook: "",
+    // Empty links are hidden on the live site.
+    instagram: "https://www.instagram.com/sleeptalkofficial",
+    tiktok: "https://www.tiktok.com/@sleeptallk1",
+    facebook: "https://www.facebook.com/letsflexJuice",
     pinterest: "",
     youtube: "",
   },

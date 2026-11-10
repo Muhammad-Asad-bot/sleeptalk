@@ -72,7 +72,7 @@ export function QuickAddPanel({ productId, open, onClose }: { productId: string;
                   alt=""
                   fill
                   sizes="112px"
-                  className="object-cover"
+                  className="object-contain"
                   showDemoTag={false}
                 />
               </div>

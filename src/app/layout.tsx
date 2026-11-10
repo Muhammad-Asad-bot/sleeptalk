@@ -19,8 +19,8 @@ const cormorant = Cormorant_Garamond({
   display: "swap",
 });
 
-// All pages read per-request data (market cookie, session, admin-managed content).
-export const dynamic = "force-dynamic";
+// Pages are rendered per request because they read cookies (market, session). Do NOT add
+// `dynamic = "force-dynamic"` here: it disables the storefront data cache (lib/server/store-cache).
 
 export async function generateMetadata(): Promise<Metadata> {
   const { seo } = await getSettings();

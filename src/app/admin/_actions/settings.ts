@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { refreshStorefront } from "@/lib/server/store-cache";
 import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { markets, sessions, shippingRates, users } from "@/db/schema";
@@ -44,6 +45,7 @@ export async function saveShippingRateAction(formData: FormData) {
   else await db.insert(shippingRates).values(values);
   await audit(user, id ? "shipping.rate_updated" : "shipping.rate_created", "shipping_rate", id || name, values);
   revalidatePath("/", "layout");
+  refreshStorefront();
   back("/admin/shipping", { ok: `Rate “${name}” saved.` });
 }
 
@@ -56,6 +58,7 @@ export async function deleteShippingRateAction(formData: FormData) {
   await db.delete(shippingRates).where(eq(shippingRates.id, id));
   await audit(user, "shipping.rate_deleted", "shipping_rate", id, { name: r.name, market: r.market });
   revalidatePath("/", "layout");
+  refreshStorefront();
   back("/admin/shipping", { ok: `Deleted “${r.name}”.` });
 }
 
@@ -84,6 +87,7 @@ export async function saveMarketAction(formData: FormData) {
     .where(eq(markets.code, code));
   await audit(user, "market.updated", "market", code, { active, isDefault });
   revalidatePath("/", "layout");
+  refreshStorefront();
   back("/admin/shipping", { ok: `${code} market saved.` });
 }
 
@@ -119,6 +123,7 @@ export async function saveStoreSettingsAction(formData: FormData) {
   await saveSetting("inventory", nextInventory);
   await audit(user, "settings.store_updated", "settings", "store", { demoMode: nextStore.demoMode, supportEmail: nextStore.supportEmail });
   revalidatePath("/", "layout");
+  refreshStorefront();
   back("/admin/settings", { ok: "Store settings saved." });
 }
 

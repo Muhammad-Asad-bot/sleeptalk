@@ -58,6 +58,7 @@ export async function createPaymentSession(order: PaymentOrder): Promise<Payment
 
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY is not configured.");
+  const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60;
   const body = new URLSearchParams({
     mode: "payment",
     customer_email: order.email,
@@ -72,7 +73,7 @@ export async function createPaymentSession(order: PaymentOrder): Promise<Payment
     "line_items[0][price_data][currency]": order.currency.toLowerCase(),
     "line_items[0][price_data][unit_amount]": String(order.total),
     "line_items[0][price_data][product_data][name]": `SLEEP TALK order ${order.number} (${order.itemCount} item${order.itemCount === 1 ? "" : "s"})`,
-    expires_at: String(Math.floor(Date.now() / 1000) + 60 * 60),
+    expires_at: String(expiresAt),
   });
   if (order.currency.toUpperCase() === "CAD") {
     // Card (incl. Apple Pay / Google Pay) plus Canadian bank account. One-off purchases by consumers.
@@ -86,13 +87,33 @@ export async function createPaymentSession(order: PaymentOrder): Promise<Payment
     headers: {
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/x-www-form-urlencoded",
-      "Idempotency-Key": `checkout-${order.id}`,
+      // Stripe rejects a reused key whose request body differs, and the body contains
+      // expires_at, so the key must be unique per session request — not just per order.
+      // Retries for the same order reuse the open session instead (see getOpenPaymentSession).
+      "Idempotency-Key": `checkout-${order.id}-${expiresAt}`,
     },
     body,
   });
   const json = (await res.json()) as { id?: string; url?: string; error?: { message?: string } };
   if (!res.ok || !json.url || !json.id) throw new Error(`Stripe error: ${json.error?.message ?? res.status}`);
   return { redirectUrl: json.url, ref: json.id };
+}
+
+/**
+ * Looks up an existing payment session for a retried checkout. Returns its state so the caller
+ * can send the shopper back to the same open session instead of opening a second one (which
+ * could let the same order be paid twice).
+ */
+export async function getPaymentSessionState(ref: string | null): Promise<{ status: "open"; url: string } | { status: "complete" | "expired" | "unknown" }> {
+  if (!ref || !ref.startsWith("cs_") || !process.env.STRIPE_SECRET_KEY) return { status: "unknown" };
+  const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${ref}`, {
+    headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` },
+  });
+  if (!res.ok) return { status: "unknown" };
+  const json = (await res.json()) as { status?: string; url?: string | null };
+  if (json.status === "open" && json.url) return { status: "open", url: json.url };
+  if (json.status === "complete" || json.status === "expired") return { status: json.status };
+  return { status: "unknown" };
 }
 
 /** Expires an open Stripe Checkout Session so it can no longer be paid. */

@@ -28,7 +28,7 @@ export function CartLines({ lines, compact = false }: { lines: QuoteLine[]; comp
             onClick={() => setCartOpen(false)}
             className={cn("relative shrink-0 overflow-hidden bg-cream", compact ? "h-28 w-[88px]" : "h-36 w-28")}
           >
-            <SmartImage src={line.image} alt={line.imageAlt} fill sizes="112px" className="object-cover" showDemoTag={false} />
+            <SmartImage src={line.image} alt={line.imageAlt} fill sizes="112px" className="object-contain" showDemoTag={false} />
           </Link>
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="flex items-start justify-between gap-3">

@@ -15,7 +15,7 @@ import type { CartLineInput, CartQuote } from "@/lib/cart-types";
 import { absoluteUrl } from "@/lib/utils";
 import { resolveCart } from "./cart";
 import { sendEmail } from "./email";
-import { activeProvider, cancelPaymentSession, createPaymentSession } from "./payments";
+import { activeProvider, cancelPaymentSession, createPaymentSession, getPaymentSessionState } from "./payments";
 import { randomToken, safeEqual } from "./security";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -84,10 +84,24 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       return { ok: true, orderNumber: existing.number, redirectUrl: `/order-confirmation/${existing.number}?t=${existing.accessToken}` };
     }
     if (existing.status === "pending_payment") {
-      const itemCount = (await db.select().from(orderItems).where(eq(orderItems.orderId, existing.id))).reduce((n, i) => n + i.quantity, 0);
-      const session = await createPaymentSession({ ...existing, itemCount });
-      await db.update(orders).set({ paymentRef: session.ref }).where(eq(orders.id, existing.id));
-      return { ok: true, orderNumber: existing.number, redirectUrl: session.redirectUrl };
+      const confirmation = `/order-confirmation/${existing.number}?t=${existing.accessToken}`;
+      try {
+        // Same checkout attempt again (back button, double click): reuse the open session so
+        // the order can never be paid twice.
+        const previous = await getPaymentSessionState(existing.paymentRef);
+        if (previous.status === "open") return { ok: true, orderNumber: existing.number, redirectUrl: previous.url };
+        if (previous.status === "complete") return { ok: true, orderNumber: existing.number, redirectUrl: confirmation };
+        if (previous.status === "unknown" && !(await cancelPaymentSession(existing.paymentRef))) {
+          return { ok: true, orderNumber: existing.number, redirectUrl: confirmation };
+        }
+        const itemCount = (await db.select().from(orderItems).where(eq(orderItems.orderId, existing.id))).reduce((n, i) => n + i.quantity, 0);
+        const session = await createPaymentSession({ ...existing, itemCount });
+        await db.update(orders).set({ paymentRef: session.ref }).where(eq(orders.id, existing.id));
+        return { ok: true, orderNumber: existing.number, redirectUrl: session.redirectUrl };
+      } catch (error) {
+        console.error("[checkout] resuming payment failed", error);
+        return { ok: false, error: "We couldn't restart the payment. Please try again in a moment." };
+      }
     }
     return { ok: false, error: "That checkout attempt has ended. Please review your bag and try again.", resetToken: true };
   }
