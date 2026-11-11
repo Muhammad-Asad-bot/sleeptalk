@@ -346,8 +346,8 @@ export function CheckoutView({
                 <ul className="space-y-4">
                   {quote.lines.map((l) => (
                     <li key={l.key} className="flex gap-3">
-                      <div className="relative h-20 w-16 shrink-0 overflow-hidden bg-cream">
-                        <SmartImage src={l.image} alt={l.imageAlt} fill sizes="64px" className="object-cover" showDemoTag={false} />
+                      <div className="relative h-20 w-16 shrink-0 overflow-hidden bg-product">
+                        <SmartImage src={l.image} alt={l.imageAlt} fill sizes="64px" className="object-contain object-center block" showDemoTag={false} />
                         <span className="absolute right-0 top-0 grid size-5 place-items-center bg-ink text-[0.625rem] text-canvas">{l.quantity}</span>
                       </div>
                       <div className="min-w-0 flex-1 text-xs">

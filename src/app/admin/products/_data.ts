@@ -5,6 +5,7 @@ import { categories, products } from "@/db/schema";
 import type { EditorInitial } from "@/components/admin/product-editor";
 import { MARKET_CODES, minorToInput } from "@/lib/markets";
 import { getMarketConfigs, getSettings } from "@/lib/server/settings";
+import { isFit } from "@/lib/fits";
 
 export async function editorOptions() {
   const db = await getDb();
@@ -87,6 +88,7 @@ export async function loadEditorProduct(id: string): Promise<EditorInitial | nul
       color: v.color,
       colorHex: v.colorHex,
       size: v.size,
+      fit: isFit(v.fit) ? v.fit : "standard",
       stock: v.stock,
       lowStockThreshold: v.lowStockThreshold,
       allowBackorder: v.allowBackorder,

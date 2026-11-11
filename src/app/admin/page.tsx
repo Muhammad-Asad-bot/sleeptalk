@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { variantLabel } from "@/lib/fits";
 import { CheckCircle2, ChevronRight, ExternalLink, LayoutGrid, Percent, Plus } from "lucide-react";
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
@@ -33,7 +34,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
     db.$count(orders, eq(orders.status, "pending_payment")),
     db.$count(users, and(eq(users.role, "customer"), gte(users.createdAt, since30))),
     db
-      .select({ id: variants.id, sku: variants.sku, color: variants.color, size: variants.size, stock: variants.stock, threshold: variants.lowStockThreshold, title: products.title, productId: products.id })
+      .select({ id: variants.id, sku: variants.sku, color: variants.color, size: variants.size, fit: variants.fit, stock: variants.stock, threshold: variants.lowStockThreshold, title: products.title, productId: products.id })
       .from(variants)
       .innerJoin(products, eq(products.id, variants.productId))
       .where(and(eq(variants.active, true), eq(variants.allowBackorder, false), lte(variants.stock, variants.lowStockThreshold), eq(products.status, "active")))
@@ -162,7 +163,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
                   <li key={v.id} className="flex items-center justify-between gap-3 py-2">
                     <div className="min-w-0">
                       <p className="truncate font-medium">{v.title}</p>
-                      <p className="text-xs text-ash">{v.color} / {v.size} · {v.sku}</p>
+                      <p className="text-xs text-ash">{variantLabel(v, true)} · {v.sku}</p>
                     </div>
                     <Badge color={v.stock <= 0 ? "red" : "amber"}>{v.stock <= 0 ? "Sold out" : `${v.stock} left`}</Badge>
                   </li>

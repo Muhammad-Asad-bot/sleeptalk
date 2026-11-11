@@ -17,7 +17,7 @@ export function QuickAddPanel({ productId, open, onClose }: { productId: string;
   const { addToCart, market } = useStore();
   const [options, setOptions] = useState<ProductOptions | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selection, setSelection] = useState<PickerSelection>({ colour: null, sizes: [] });
+  const [selection, setSelection] = useState<PickerSelection>({ colour: null, fit: null, sizes: [] });
   const [showErrors, setShowErrors] = useState(false);
 
   useEffect(() => {
@@ -66,7 +66,7 @@ export function QuickAddPanel({ productId, open, onClose }: { productId: string;
         {options ? (
           <div className="space-y-6">
             <div className="flex gap-4">
-              <div className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden bg-cream">
+              <div className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden bg-product">
                 <SmartImage
                   src={options.imagesByColour[selection.colour ?? ""] ?? null}
                   alt=""

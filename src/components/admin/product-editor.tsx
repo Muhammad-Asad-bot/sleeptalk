@@ -6,6 +6,8 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { saveProductAction, type ProductPayload } from "@/app/admin/_actions/products";
 import { addLibraryColourAction, quickCreateCategoryAction } from "@/app/admin/_actions/catalog";
 import { SmartImage } from "@/components/ui/smart-image";
+import { compressImage } from "@/lib/compress-image";
+import { variantLabel } from "@/lib/fits";
 import { MARKETS, MARKET_CODES, type MarketCode } from "@/lib/markets";
 import { slugify, swatchBackground } from "@/lib/utils";
 import { ColoursSection, gridFromVariants, newKey as key, type ColourImage, type ColourVariant } from "./product-colours";
@@ -19,13 +21,14 @@ export type EditorInitial = Omit<ProductPayload, "variants" | "images"> & {
   images: ProductPayload["images"];
 };
 
-/** SKUs for new variants nobody typed by hand: ST-<title initials>-<colour>-<size>, unique within the product. */
+/** SKUs for new variants nobody typed by hand: ST-<title initials>-<colour>-<size>[-OS for oversized], unique within the product. */
 function fillAutoSkus(title: string, variants: VariantRow[]) {
   const prefix = `ST-${slugify(title).split("-").map((w) => w[0]).join("").toUpperCase().slice(0, 5) || "NEW"}`;
   const taken = new Set(variants.filter((v) => !v.autoSku && v.sku).map((v) => v.sku));
   return variants.map((v) => {
     if (!v.autoSku) return v;
-    const base = `${prefix}-${v.color.replace(/[^A-Za-z0-9]/g, "").slice(0, 3).toUpperCase() || "COL"}-${v.size.replace(/[^A-Za-z0-9]/g, "")}`;
+    const fitSuffix = v.fit === "oversized" ? "-OS" : "";
+    const base = `${prefix}-${v.color.replace(/[^A-Za-z0-9]/g, "").slice(0, 3).toUpperCase() || "COL"}-${v.size.replace(/[^A-Za-z0-9]/g, "")}${fitSuffix}`;
     let sku = base;
     for (let n = 2; taken.has(sku); n++) sku = `${base}-${n}`;
     taken.add(sku);
@@ -78,8 +81,8 @@ export function ProductEditor({
     // Saved variants whose colour/size is switched off stay in the list (hidden) so they can be switched back on.
     const grid = gridFromVariants(initial.variants);
     const onColours = new Set(grid.colours.map((c) => c.name));
-    const onSizes = new Set(grid.sizes);
-    return initial.variants.map((v) => ({ ...v, key: key(), hiddenByGrid: initial.type === "standard" && (!onColours.has(v.color) || !onSizes.has(v.size)) }));
+    const onFit = (v: { size: string; fit: string }) => (grid.fitsBySize[v.size] ?? []).includes(v.fit as never);
+    return initial.variants.map((v) => ({ ...v, key: key(), hiddenByGrid: initial.type === "standard" && (!onColours.has(v.color) || !onFit(v)) }));
   });
   const visibleVariants = variants.filter((v) => !v.hiddenByGrid);
   const [images, setImages] = useState<ImageRow[]>(() => initial.images.map((i) => ({ ...i, key: key() })));
@@ -122,7 +125,7 @@ export function ProductEditor({
     try {
       for (const file of files) {
         const fd = new FormData();
-        fd.append("file", file);
+        fd.append("file", await compressImage(file));
         const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
         const data = (await res.json()) as { url?: string; error?: string };
         if (!res.ok || !data.url) throw new Error(`${file.name}: ${data.error ?? "Upload failed"}`);
@@ -156,6 +159,7 @@ export function ProductEditor({
           color: v.color,
           colorHex: v.colorHex,
           size: v.size,
+          fit: v.fit,
           initialStock: v.initialStock,
           stockDelta: v.id && v.editedStock != null && v.editedStock !== (v.stock ?? 0) ? v.editedStock - (v.stock ?? 0) : undefined,
           lowStockThreshold: v.lowStockThreshold,
@@ -330,7 +334,7 @@ export function ProductEditor({
                           return (
                             <tr key={v.key} className="border-t border-line">
                               <td className="py-1.5 pr-2">
-                                <span className="inline-flex items-center gap-1.5"><span className="size-3 border border-line" style={{ background: swatchBackground(v.colorHex) }} aria-hidden />{v.color} / {v.size}</span>
+                                <span className="inline-flex items-center gap-1.5"><span className="size-3 border border-line" style={{ background: swatchBackground(v.colorHex) }} aria-hidden />{variantLabel(v, true)}</span>
                               </td>
                               <td className="pr-2">
                                 <input
@@ -338,7 +342,7 @@ export function ProductEditor({
                                   placeholder="Automatic"
                                   onChange={(e) => upd({ sku: e.target.value.toUpperCase(), autoSku: e.target.value.trim() === "" && !v.id })}
                                   className={`${inputSm} w-44 font-mono`}
-                                  aria-label={`SKU for ${v.color} ${v.size}`}
+                                  aria-label={`SKU for ${variantLabel(v, true)}`}
                                 />
                               </td>
                               <td className="pr-2"><input type="number" min={0} value={v.lowStockThreshold} onChange={(e) => upd({ lowStockThreshold: Math.max(0, Number(e.target.value) || 0) })} className={`${inputSm} w-16`} aria-label="Low stock threshold" /></td>

@@ -135,8 +135,8 @@ export function SearchOverlay() {
                         {results.map((r) => (
                           <li key={r.id}>
                             <Link href={`/products/${r.slug}`} onClick={() => setSearchOpen(false)} className="group block">
-                              <div className="relative aspect-[4/5] overflow-hidden bg-cream">
-                                <SmartImage src={r.image} alt="" fill sizes="(min-width:1024px) 14vw, 45vw" className="object-cover" showDemoTag={false} />
+                              <div className="relative aspect-[4/5] overflow-hidden bg-product">
+                                <SmartImage src={r.image} alt="" fill sizes="(min-width:1024px) 14vw, 45vw" className="object-contain object-center block" showDemoTag={false} />
                               </div>
                               <p className="mt-2 text-xs font-medium leading-snug group-hover:underline">{r.title}</p>
                               <p className="text-xs text-stone">{formatMoney(r.price, market)}</p>

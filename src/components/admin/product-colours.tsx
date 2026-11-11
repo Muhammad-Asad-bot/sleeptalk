@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, ImagePlus, Plus, Star, Trash2, X } from "lucide-
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { SmartImage } from "@/components/ui/smart-image";
+import { FIT_CODES, FIT_LABEL, fitsOf, type FitCode } from "@/lib/fits";
 import { cn, splitHex, swatchBackground } from "@/lib/utils";
 import { abtn, inputSm } from "./ui";
 
@@ -16,6 +17,7 @@ export type ColourVariant = {
   color: string;
   colorHex: string;
   size: string;
+  fit: FitCode;
   initialStock?: number;
   stock?: number;
   lowStockThreshold: number;
@@ -30,6 +32,8 @@ export type ColourVariant = {
 };
 export type ColourImage = { key: string; url: string; alt: string; color: string | null };
 type Colour = { key: string; name: string; hex: string };
+/** Which fits each switched-on size is sold in, e.g. { S: ["standard", "oversized"], XL: ["standard"] } */
+export type FitsBySize = Record<string, FitCode[]>;
 
 export const PRESET_COLOURS: Record<string, string> = {
   Black: "#141414",
@@ -62,30 +66,44 @@ export function sortSizes(list: string[]) {
  * The colours and sizes currently switched on, worked out from saved variants: only those with an
  * active variant count, so a size that was switched off doesn't look selected.
  */
-export function gridFromVariants(variants: { color: string; colorHex: string; size: string; active: boolean }[]) {
+export function gridFromVariants(variants: { color: string; colorHex: string; size: string; fit: string; active: boolean }[]) {
   const live = variants.some((v) => v.active) ? variants.filter((v) => v.active) : variants;
   const colours = new Map<string, string>();
   for (const v of live) if (v.color && !colours.has(v.color)) colours.set(v.color, v.colorHex);
-  const sizes = sortSizes([...new Set(live.map((v) => v.size).filter(Boolean))]);
-  return { colours: [...colours].map(([name, hex]) => ({ name, hex })), sizes: sizes.length || variants.length ? sizes : DEFAULT_SIZES };
+  const found = sortSizes([...new Set(live.map((v) => v.size).filter(Boolean))]);
+  const sizes = found.length || variants.length ? found : DEFAULT_SIZES;
+  const fitsBySize: FitsBySize = {};
+  for (const s of sizes) {
+    const f = fitsOf(live.filter((v) => v.size === s));
+    fitsBySize[s] = f.length ? f : ["standard"];
+  }
+  return { colours: [...colours].map(([name, hex]) => ({ name, hex })), sizes, fitsBySize };
 }
 
 /**
- * One variant per switched-on colour × size. Saved rows outside the grid are kept but hidden
+ * One variant per switched-on colour × size × ticked fit. Saved rows outside the grid are kept but hidden
  * (saved as inactive, stock untouched) so switching them back on reuses the same SKU and stock.
  * `reactivate` turns rows back on when staff explicitly switch a colour or size on.
  */
-export function syncVariants(colours: Colour[], sizes: string[], prev: ColourVariant[], reactivate?: (v: ColourVariant) => boolean) {
+export function syncVariants(
+  colours: Colour[],
+  sizes: string[],
+  fitsBySize: FitsBySize,
+  prev: ColourVariant[],
+  reactivate?: (v: ColourVariant) => boolean,
+) {
   const next: ColourVariant[] = [];
   const used = new Set<string>();
   for (const c of colours) {
     for (const size of sizes) {
-      const found = prev.find((v) => v.color === c.name && v.size === size);
-      if (found) {
-        used.add(found.key);
-        next.push({ ...found, colorHex: c.hex, hiddenByGrid: false, active: reactivate?.(found) ? true : found.active });
-      } else {
-        next.push({ key: newKey(), sku: "", autoSku: true, color: c.name, colorHex: c.hex, size, initialStock: 0, lowStockThreshold: 3, allowBackorder: false, active: true });
+      for (const fit of fitsBySize[size] ?? ["standard"]) {
+        const found = prev.find((v) => v.color === c.name && v.size === size && v.fit === fit);
+        if (found) {
+          used.add(found.key);
+          next.push({ ...found, colorHex: c.hex, hiddenByGrid: false, active: reactivate?.(found) ? true : found.active });
+        } else {
+          next.push({ key: newKey(), sku: "", autoSku: true, color: c.name, colorHex: c.hex, size, fit, initialStock: 0, lowStockThreshold: 3, allowBackorder: false, active: true });
+        }
       }
     }
   }
@@ -113,6 +131,7 @@ export function ColoursSection({ variants, setVariants, images, setImages, uploa
   const singles = lib.filter((c) => !c.hex.includes(","));
   const [colours, setColours] = useState<Colour[]>(() => gridFromVariants(variants).colours.map((c) => ({ key: newKey(), ...c })));
   const [sizes, setSizes] = useState<string[]>(() => gridFromVariants(variants).sizes);
+  const [fitsBySize, setFitsBySize] = useState<FitsBySize>(() => gridFromVariants(variants).fitsBySize);
   const visible = variants.filter((v) => !v.hiddenByGrid);
   const [newColour, setNewColour] = useState("");
   const [newHex, setNewHex] = useState("#111111");
@@ -123,7 +142,7 @@ export function ColoursSection({ variants, setVariants, images, setImages, uploa
 
   const applyColours = (next: Colour[], reactivate?: (v: ColourVariant) => boolean) => {
     setColours(next);
-    setVariants((prev) => syncVariants(next, sizes, prev, reactivate));
+    setVariants((prev) => syncVariants(next, sizes, fitsBySize, prev, reactivate));
   };
 
   const addColour = (rawName: string, hex?: string) => {
@@ -184,14 +203,33 @@ export function ColoursSection({ variants, setVariants, images, setImages, uploa
       if (stocked && !window.confirm(`Stop selling size ${size}? Its stock is kept and comes back if you switch the size on again.`)) return;
       const next = sizes.filter((s) => s !== size);
       setSizes(next);
-      setVariants((prev) => syncVariants(colours, next, prev));
+      setVariants((prev) => syncVariants(colours, next, fitsBySize, prev));
     } else {
       const next = sortSizes([...sizes, size]);
+      // A newly switched-on size starts in Standard fit (tick Oversized below to add it).
+      const nextFits = { ...fitsBySize, [size]: fitsBySize[size]?.length ? fitsBySize[size] : (["standard"] as FitCode[]) };
       setSizes(next);
+      setFitsBySize(nextFits);
       // Switching a size on puts every colour in that size on sale (reusing saved stock if any).
-      setVariants((prev) => syncVariants(colours, next, prev, (v) => v.size === size));
+      setVariants((prev) => syncVariants(colours, next, nextFits, prev, (v) => v.size === size && nextFits[size].includes(v.fit)));
     }
   };
+
+  /** Tick or untick one fit for one size (every size keeps at least one fit). */
+  const toggleFit = (size: string, fit: FitCode) => {
+    const current = fitsBySize[size] ?? ["standard"];
+    const on = current.includes(fit);
+    if (on && current.length === 1) return;
+    if (on) {
+      const stocked = visible.some((v) => v.size === size && v.fit === fit && v.id && (v.stock ?? 0) > 0);
+      if (stocked && !window.confirm(`Stop selling size ${size} in ${FIT_LABEL[fit]} fit? Its stock is kept and comes back if you tick it again.`)) return;
+    }
+    const nextList = on ? current.filter((f) => f !== fit) : FIT_CODES.filter((f) => f === fit || current.includes(f));
+    const nextFits = { ...fitsBySize, [size]: nextList };
+    setFitsBySize(nextFits);
+    setVariants((prev) => syncVariants(colours, sizes, nextFits, prev, on ? undefined : (v) => v.size === size && v.fit === fit));
+  };
+  const usedFits = FIT_CODES.filter((f) => sizes.some((s) => (fitsBySize[s] ?? ["standard"]).includes(f)));
 
   const setSavedStock = (variantKey: string, value: string) =>
     setVariants((prev) => prev.map((v) => (v.key === variantKey ? { ...v, editedStock: Math.max(0, Math.floor(Number(value) || 0)) } : v)));
@@ -225,8 +263,50 @@ export function ColoursSection({ variants, setVariants, images, setImages, uploa
             );
           })}
         </div>
+        {sizes.length ? (
+          <div className="mt-4">
+            <p className="mb-2 text-xs font-medium text-charcoal">
+              Fits for each size <span className="font-normal text-stone">— tick Standard fit, Oversized fit or both. Each fit has its own stock.</span>
+            </p>
+            <table className="text-xs">
+              <thead>
+                <tr className="text-[0.625rem] uppercase tracking-[0.1em] text-ash">
+                  <th className="py-1.5 pr-6 text-left font-semibold">Size</th>
+                  {FIT_CODES.map((f) => (
+                    <th key={f} className="px-4 py-1.5 font-semibold">{FIT_LABEL[f]} fit</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sizes.map((s) => (
+                  <tr key={s} className="border-t border-line">
+                    <td className="py-1.5 pr-6 font-semibold">{s}</td>
+                    {FIT_CODES.map((f) => {
+                      const list = fitsBySize[s] ?? ["standard"];
+                      const on = list.includes(f);
+                      const onlyOne = on && list.length === 1;
+                      return (
+                        <td key={f} className="px-4 py-1.5 text-center">
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            disabled={onlyOne}
+                            onChange={() => toggleFit(s, f)}
+                            className="size-4 accent-ink disabled:opacity-60"
+                            aria-label={`Sell size ${s} in ${FIT_LABEL[f]} fit`}
+                            title={onlyOne ? "Each size needs at least one fit" : undefined}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
         <p className="mt-2 text-[0.6875rem] text-stone">
-          Standard Canadian (North American) sizing. Shoppers see the measurements in inches on the <a href="/size-guide" target="_blank" rel="noreferrer" className="underline">size guide</a>.
+          Standard Canadian (North American) sizing. Shoppers see Standard and Oversized measurements on the <a href="/size-guide" target="_blank" rel="noreferrer" className="underline">size guide</a>, and pick a fit on the product page when a product is sold in both.
         </p>
       </div>
 
@@ -235,7 +315,14 @@ export function ColoursSection({ variants, setVariants, images, setImages, uploa
       {/* One block per colour */}
       {colours.map((c) => {
         const photos = images.filter((i) => i.color === c.name);
-        const rows = sizes.map((s) => visible.find((v) => v.color === c.name && v.size === s)).filter((v): v is ColourVariant => !!v);
+        const groups = usedFits.map((f) => ({
+          fit: f,
+          rows: sizes
+            .filter((s) => (fitsBySize[s] ?? ["standard"]).includes(f))
+            .map((s) => visible.find((v) => v.color === c.name && v.size === s && v.fit === f))
+            .filter((v): v is ColourVariant => !!v),
+        }));
+        const rows = groups.flatMap((g) => g.rows);
         return (
           <section key={c.key} className="border border-line bg-white p-4" aria-label={`Colour ${c.name}`}>
             <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -270,8 +357,12 @@ export function ColoursSection({ variants, setVariants, images, setImages, uploa
             <div className="mt-4">
               <p className="mb-2 text-xs font-medium text-charcoal">Stock for {c.name}</p>
               {rows.length ? (
+                <div className="space-y-3">
+                {groups.filter((g) => g.rows.length).map((g) => (
+                <div key={g.fit}>
+                {usedFits.length > 1 ? <p className="mb-1.5 text-[0.625rem] font-semibold uppercase tracking-[0.1em] text-ash">{FIT_LABEL[g.fit]} fit</p> : null}
                 <div className="flex flex-wrap gap-2">
-                  {rows.map((v) => (
+                  {g.rows.map((v) => (
                     <label key={v.key} className="flex w-20 flex-col border border-line p-2 text-center">
                       <span className="text-[0.625rem] font-semibold uppercase tracking-[0.1em] text-ash">{v.size}</span>
                       {v.id ? (
@@ -286,7 +377,7 @@ export function ColoursSection({ variants, setVariants, images, setImages, uploa
                               "mt-1 h-8 w-full border bg-white text-center text-sm tabular-nums focus:border-ink focus:outline-none",
                               v.editedStock != null && v.editedStock !== v.stock ? "border-ink font-semibold" : "border-line",
                             )}
-                            aria-label={`${c.name} size ${v.size} stock`}
+                            aria-label={`${c.name} size ${v.size} ${FIT_LABEL[v.fit]} fit stock`}
                           />
                           {v.editedStock != null && v.editedStock !== v.stock ? (
                             <span className="mt-0.5 text-[0.5625rem] text-stone">was {v.stock ?? 0}</span>
@@ -300,11 +391,14 @@ export function ColoursSection({ variants, setVariants, images, setImages, uploa
                           value={v.initialStock ?? 0}
                           onChange={(e) => setStock(v.key, e.target.value)}
                           className="mt-1 h-8 w-full border border-line bg-white text-center text-sm tabular-nums focus:border-ink focus:outline-none"
-                          aria-label={`${c.name} size ${v.size} starting stock`}
+                          aria-label={`${c.name} size ${v.size} ${FIT_LABEL[v.fit]} fit starting stock`}
                         />
                       )}
                     </label>
                   ))}
+                </div>
+                </div>
+                ))}
                 </div>
               ) : (
                 <p className="text-xs text-stone">Pick at least one size above.</p>

@@ -15,6 +15,13 @@
       "when": 1794283887062,
       "tag": "0001_bank_debit",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794412781168,
+      "tag": "0002_variant_fit",
+      "breakpoints": true
     }
   ]
 }

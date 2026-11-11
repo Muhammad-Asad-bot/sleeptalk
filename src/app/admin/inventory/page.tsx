@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { variantLabel } from "@/lib/fits";
 import Link from "next/link";
 import { and, asc, eq, ilike, lte, or, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
@@ -87,7 +88,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
                 <tr key={v.id} className={v.active ? "" : "opacity-60"}>
                   <td className={`${tdClass} min-w-[220px]`}>
                     <Link href={`/admin/products/${productId}`} className="font-medium hover:underline">{title}</Link>
-                    <span className="block text-xs text-ash">{v.color} / {v.size}{status !== "active" ? ` · product ${status}` : ""}</span>
+                    <span className="block text-xs text-ash">{variantLabel(v, true)}{status !== "active" ? ` · product ${status}` : ""}</span>
                   </td>
                   <td className={`${tdClass} whitespace-nowrap font-mono text-xs`}>
                     <Link href={`/admin/inventory/${v.id}`} className="hover:underline" title="Stock history">{v.sku}</Link>

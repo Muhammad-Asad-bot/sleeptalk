@@ -216,6 +216,8 @@ export const variants = pgTable(
     color: text("color").notNull(),
     colorHex: text("color_hex").notNull().default("#111111"),
     size: text("size").notNull(),
+    /** Garment fit: "standard" | "oversized" (see lib/fits.ts). Each fit has its own stock and SKU. */
+    fit: text("fit").notNull().default("standard"),
     stock: integer("stock").notNull().default(0),
     lowStockThreshold: integer("low_stock_threshold").notNull().default(3),
     /** Oversell setting: allow orders when stock reaches zero */
@@ -317,7 +319,17 @@ export const collectionProducts = pgTable(
 /* ───────────────────────── Orders ───────────────────────── */
 
 export type ShippingMethodSnapshot = { id: string; name: string; price: number; description: string };
-export type OrderComponentSnapshot = { variantId: string; productId: string; label: string; title: string; sku: string; size: string; color: string };
+export type OrderComponentSnapshot = {
+  variantId: string;
+  productId: string;
+  label: string;
+  title: string;
+  sku: string;
+  size: string;
+  color: string;
+  /** Absent on orders placed before fits existed */
+  fit?: string;
+};
 
 export const orders = pgTable(
   "orders",

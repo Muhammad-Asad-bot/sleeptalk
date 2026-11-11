@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { variantLabel } from "@/lib/fits";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
@@ -60,7 +61,7 @@ export default async function AdminOrderPage({ params, searchParams }: Props) {
                     <p className="text-xs text-stone">SKU {item.sku}</p>
                     {item.components.length ? (
                       <ul className="mt-1 text-xs text-stone">
-                        {item.components.map((c) => <li key={c.variantId}>{c.label}: {c.title} — {c.color} / {c.size} ({c.sku})</li>)}
+                        {item.components.map((c) => <li key={c.variantId}>{c.label}: {c.title} — {c.fit ? variantLabel({ ...c, fit: c.fit }, true) : `${c.color} / ${c.size}`} ({c.sku})</li>)}
                       </ul>
                     ) : null}
                   </div>

@@ -1,8 +1,9 @@
 import type { CatalogProduct, CatalogVariant } from "@/lib/server/catalog";
+import { fitsOf, isFit, type FitCode } from "@/lib/fits";
 import { sortSizes } from "@/lib/utils";
 
 /** Serializable variant data sent to the client for size/colour selection. */
-export type OptionVariant = { id: string; color: string; size: string; available: boolean; lowStock: number | null };
+export type OptionVariant = { id: string; color: string; size: string; fit: string; available: boolean; lowStock: number | null };
 
 export type ProductOptions = {
   id: string;
@@ -17,12 +18,14 @@ export type ProductOptions = {
   variants: OptionVariant[];
   components: { productId: string; label: string; title: string; slug: string; isListed: boolean; sizes: string[]; variants: OptionVariant[] }[];
   sizes: string[];
+  /** Fits on sale. More than one → shoppers pick a fit (sets: the fit every piece shares). */
+  fits: FitCode[];
 };
 
 function toOption(v: CatalogVariant, showLowStock: boolean): OptionVariant {
   const available = v.active && (v.allowBackorder || v.stock > 0);
   const low = showLowStock && available && !v.allowBackorder && v.stock <= v.lowStockThreshold ? v.stock : null;
-  return { id: v.id, color: v.color, size: v.size, available, lowStock: low };
+  return { id: v.id, color: v.color, size: v.size, fit: isFit(v.fit) ? v.fit : "standard", available, lowStock: low };
 }
 
 export function buildProductOptions(p: CatalogProduct, showLowStock: boolean): ProductOptions {
@@ -42,6 +45,11 @@ export function buildProductOptions(p: CatalogProduct, showLowStock: boolean): P
     };
   });
   const variants = p.variants.filter((v) => v.active).map((v) => toOption(v, showLowStock));
+  // Sets: only fits every piece is made in (jacket and pants always share a fit).
+  const fits =
+    p.type === "set"
+      ? fitsOf(components.flatMap((c) => c.variants)).filter((f) => components.every((c) => c.variants.some((v) => v.fit === f)))
+      : fitsOf(variants);
 
   const colours = p.colours.map((c) => ({
     ...c,
@@ -64,5 +72,6 @@ export function buildProductOptions(p: CatalogProduct, showLowStock: boolean): P
     variants,
     components,
     sizes: p.sizes,
+    fits,
   };
 }

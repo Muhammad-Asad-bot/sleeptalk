@@ -4,8 +4,8 @@ import { Markdown } from "@/lib/markdown";
 import { getPage } from "@/lib/server/settings";
 import { formatDate } from "@/lib/utils";
 
-/** Renders an admin-managed content page (Admin → Content → Pages). */
-export async function ContentPage({ slug, aside }: { slug: string; aside?: React.ReactNode }) {
+/** Renders an admin-managed content page (Admin → Content → Pages). `lead` renders above the text. */
+export async function ContentPage({ slug, lead, aside }: { slug: string; lead?: React.ReactNode; aside?: React.ReactNode }) {
   const page = await getPage(slug);
   if (!page) notFound();
   return (
@@ -17,6 +17,7 @@ export async function ContentPage({ slug, aside }: { slug: string; aside?: React
           <p className="mt-4 text-xs text-stone">Last updated {formatDate(page.updatedAt)}</p>
         </header>
         <div className="max-w-2xl lg:col-span-7 lg:col-start-6">
+          {lead ? <div className="mb-10">{lead}</div> : null}
           <Markdown source={page.body} />
           {aside}
         </div>

@@ -34,6 +34,8 @@ export type QuoteComponent = {
   sku: string;
   size: string;
   color: string;
+  /** "standard" | "oversized" (absent on orders placed before fits existed) */
+  fit?: string;
 };
 
 export type QuoteLine = {

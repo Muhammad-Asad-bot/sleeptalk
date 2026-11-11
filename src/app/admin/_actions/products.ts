@@ -10,6 +10,7 @@ import { MARKET_CODES, parseMoneyInput } from "@/lib/markets";
 import { requireStaff } from "@/lib/server/auth";
 import { audit } from "@/lib/server/audit";
 import { slugify } from "@/lib/utils";
+import { FIT_CODES } from "@/lib/fits";
 
 const priceSchema = z.object({ amount: z.string().max(12), compareAt: z.string().max(12), available: z.boolean() });
 
@@ -51,6 +52,7 @@ const productSchema = z.object({
         // One hex, or "#upper,#lower" for a two-tone colour.
         colorHex: z.string().regex(/^#[0-9a-fA-F]{6}(,#[0-9a-fA-F]{6})?$/, "Colour must be a hex value like #111111 (or two, for a two-tone colour)"),
         size: z.string().trim().min(1, "Every variant needs a size").max(20),
+        fit: z.enum(FIT_CODES).default("standard"),
         initialStock: z.number().int().min(0).max(100000).optional(),
         /** Saved variants: change typed on the product page (new count − count when the page loaded). */
         stockDelta: z.number().int().min(-100000).max(100000).optional(),
@@ -172,6 +174,7 @@ export async function saveProductAction(payload: ProductPayload): Promise<SavePr
           color: v.color,
           colorHex: v.colorHex,
           size: v.size,
+          fit: v.fit,
           lowStockThreshold: v.lowStockThreshold,
           allowBackorder: v.allowBackorder,
           active: v.active,

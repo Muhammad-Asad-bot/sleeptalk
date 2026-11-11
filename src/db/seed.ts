@@ -545,9 +545,13 @@ Use the Track Order page with your order number and email address, or view it in
   {
     slug: "size-guide",
     title: "Size guide",
-    body: `All measurements are in **inches**, using standard Canadian (North American) unisex sizing. Not sure between two sizes? Pick the larger one for a relaxed fit, or go one size up for an oversized streetwear look.
+    body: `## Standard or oversized?
+
+Every piece is unisex, and our size chart covers two fits. **Standard fit** is our relaxed everyday cut: take your usual size. **Oversized fit** has a wider body, dropped shoulder and extra length for a roomier streetwear look. Want the oversized length without as much width? Try one size down. Compare both fits for S to XL in the chart above.
 
 ## Find your size (body measurements)
+
+Body measurements in inches.
 
 | Size | Chest | Waist | Hips |
 | --- | --- | --- | --- |
@@ -558,45 +562,12 @@ Use the Track Order page with your order number and email address, or view it in
 | XL | 46–49 | 40–43 | 44–47 |
 | XXL | 50–53 | 44–47 | 47–50 |
 
-## Hoodies & sweatshirts (garment measurements)
-
-| Size | Chest width (pit to pit) | Body length | Sleeve (centre back) |
-| --- | --- | --- | --- |
-| XS | 18 | 26 | 32½ |
-| S (Small) | 20 | 27 | 33½ |
-| M (Medium) | 22 | 28 | 34½ |
-| L (Large) | 24 | 29 | 35½ |
-| XL | 26 | 30 | 36½ |
-| XXL | 28 | 31 | 37½ |
-
-## T-shirts & shirts (garment measurements)
-
-| Size | Chest width (pit to pit) | Body length |
-| --- | --- | --- |
-| XS | 16½ | 27 |
-| S (Small) | 18 | 28 |
-| M (Medium) | 20 | 29 |
-| L (Large) | 22 | 30 |
-| XL | 24 | 31 |
-| XXL | 26 | 32 |
-
-## Pants, joggers & track pants
-
-| Size | Waist (to fit) | Hips | Inseam |
-| --- | --- | --- | --- |
-| XS | 26–28 | 32–35 | 29 |
-| S (Small) | 28–31 | 35–38 | 30 |
-| M (Medium) | 32–35 | 38–41 | 30½ |
-| L (Large) | 36–39 | 41–44 | 31 |
-| XL | 40–43 | 44–47 | 31½ |
-| XXL | 44–47 | 47–50 | 32 |
-
 ## How to measure
 - **Chest:** around the fullest part of your chest, under the arms, keeping the tape level.
 - **Waist:** around your natural waistline, just above the belly button.
 - **Hips:** around the widest part of your hips.
 - **Inseam:** from the crotch seam to the bottom of the ankle.
-- **Garment chest width:** lay the item flat and measure straight across, armpit to armpit. Double it for the full chest.
+- **Garment measurements:** lay the item flat without stretching. Widths marked ½ in the chart are measured straight across; double them for the full measurement.
 
 Measurements can vary by about ½ inch between pieces. Questions about fit? [Contact us](/contact) and we'll help you choose.`,
   },

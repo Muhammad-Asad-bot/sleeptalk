@@ -13,6 +13,7 @@ import {
 import { cartLineKey, type CartLineInput, type CartQuote, type QuoteComponent, type QuoteLine } from "@/lib/cart-types";
 import { collectionMembership, loadCatalogFresh, type CatalogProduct } from "./catalog";
 import { getMarketConfig, getShippingRates } from "./settings";
+import { FIT_LABEL, fitsOf, isFit, variantLabel } from "@/lib/fits";
 
 export async function findDiscount(code: string | null | undefined): Promise<DiscountRule | null> {
   const normalized = code?.trim().toUpperCase();
@@ -115,6 +116,7 @@ export async function resolveCart(input: {
       const comps: QuoteComponent[] = [];
       let invalid = false;
       let colour: string | null = null;
+      let fit: string | null = null;
       product.components.forEach((component, idx) => {
         const v = component.variants.find((x) => x.id === chosen[idx] && x.active);
         if (!v) {
@@ -122,7 +124,9 @@ export async function resolveCart(input: {
           return;
         }
         if (colour && v.color !== colour) invalid = true; // a set is bought in one colourway
+        if (fit && v.fit !== fit) invalid = true; // ...and one fit (jacket and pants match)
         colour = v.color;
+        fit = v.fit;
         comps.push({
           variantId: v.id,
           productId: component.productId,
@@ -131,6 +135,7 @@ export async function resolveCart(input: {
           sku: v.sku,
           size: v.size,
           color: v.color,
+          fit: v.fit,
         });
         stockPool.set(v.id, { stock: v.stock, allowBackorder: v.allowBackorder });
       });
@@ -143,7 +148,12 @@ export async function resolveCart(input: {
         ...base,
         image: img?.url ?? null,
         imageAlt: img?.alt ?? product.title,
-        variantLabel: [colour, ...comps.map((c) => `${c.label} ${c.size}`)].join(" / "),
+        variantLabel: [
+          colour,
+          // Name the fit when the set is sold in more than one.
+          ...(isFit(fit) && fitsOf(product.components.flatMap((c) => c.variants.filter((x) => x.active))).length > 1 ? [FIT_LABEL[fit]] : []),
+          ...comps.map((c) => `${c.label} ${c.size}`),
+        ].join(" / "),
         sku: comps.map((c) => c.sku).join(" + "),
         components: comps,
         demand: comps.map((c) => ({ variantId: c.variantId, perUnit: 1 })),
@@ -160,7 +170,7 @@ export async function resolveCart(input: {
         ...base,
         image: img?.url ?? null,
         imageAlt: img?.alt ?? product.title,
-        variantLabel: `${v.color} / ${v.size}`,
+        variantLabel: variantLabel(v, fitsOf(product.variants.filter((x) => x.active)).length > 1),
         sku: v.sku,
         demand: [{ variantId: v.id, perUnit: 1 }],
       });

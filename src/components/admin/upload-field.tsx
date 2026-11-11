@@ -3,6 +3,7 @@
 import { ImagePlus } from "lucide-react";
 import { useRef, useState } from "react";
 import { SmartImage } from "@/components/ui/smart-image";
+import { compressImage } from "@/lib/compress-image";
 import { abtn, adminInput } from "./ui";
 
 /** URL input with an "Upload" button (uses the staff-only /api/admin/upload endpoint) and a preview. */
@@ -15,9 +16,9 @@ export function UploadField({ name, defaultValue = "", label }: { name: string; 
     if (!file) return;
     setBusy(true);
     setError(null);
-    const fd = new FormData();
-    fd.append("file", file);
     try {
+      const fd = new FormData();
+      fd.append("file", await compressImage(file));
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       const data = (await res.json()) as { url?: string; error?: string };
       if (!res.ok || !data.url) throw new Error(data.error ?? "Upload failed");

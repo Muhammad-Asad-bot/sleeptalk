@@ -1,0 +1,1 @@
+ALTER TABLE "variants" ADD COLUMN "fit" text DEFAULT 'standard' NOT NULL;

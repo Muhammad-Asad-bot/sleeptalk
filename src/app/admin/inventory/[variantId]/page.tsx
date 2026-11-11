@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { variantLabel } from "@/lib/fits";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
@@ -49,7 +50,7 @@ export default async function StockHistoryPage({ params, searchParams }: Props) 
     <>
       <PageHeader
         back={{ href: "/admin/inventory", label: "Inventory" }}
-        title={`${row.title} — ${row.v.color} / ${row.v.size}`}
+        title={`${row.title} — ${variantLabel(row.v, true)}`}
         description={<span className="font-mono">{row.v.sku}</span>}
         actions={<Link href={`/admin/products/${row.productId}`} className={abtn("secondary")}>Edit product</Link>}
       />

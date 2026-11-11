@@ -9,6 +9,9 @@
   --color-canvas: #f4f0e8;
   --color-paper: #fbf9f5;
   --color-cream: #e8e0d0;
+  /* One shared backdrop behind every product photo. Product photos should be cut-outs
+     (transparent PNG/WebP) so they all sit on this same colour. */
+  --color-product: #ebe6dd;
   --color-sand: #d9d1c3;
   --color-line: #dcd5c8;
   --color-stone: #8b857b;

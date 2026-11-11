@@ -29,7 +29,7 @@ export function ProductCard({
 
   return (
     <article className="group relative">
-      <div className="relative aspect-[4/5] overflow-hidden bg-cream">
+      <div className="relative aspect-[4/5] overflow-hidden bg-product">
         <Link
           href={`/products/${product.slug}`}
           className="absolute inset-0"
@@ -41,17 +41,7 @@ export function ProductCard({
           }
           aria-label={product.title}
         >
-          {/* Whole photo is always shown (object-contain). Photos that aren't 4:5 would leave bars,
-              so a blurred copy of the same photo fills the frame behind it. */}
-          <SmartImage
-            src={product.image?.url}
-            alt=""
-            aria-hidden
-            fill
-            sizes="(min-width: 1280px) 24vw, (min-width: 768px) 32vw, 50vw"
-            className="scale-110 object-cover opacity-70 blur-2xl"
-            showDemoTag={false}
-          />
+          {/* Whole photo always shown (object-contain) on the shared product backdrop. */}
           <SmartImage
             src={product.image?.url}
             alt={product.image?.alt ?? product.title}
@@ -59,7 +49,7 @@ export function ProductCard({
             priority={priority}
             sizes="(min-width: 1280px) 24vw, (min-width: 768px) 32vw, 50vw"
             className={cn(
-              "object-contain transition-opacity duration-500",
+              "object-contain object-center block transition-opacity duration-500",
               product.hoverImage && "group-hover:opacity-0 group-focus-within:opacity-0",
               soldOut && "opacity-70",
             )}
@@ -70,7 +60,7 @@ export function ProductCard({
               alt=""
               fill
               sizes="(min-width: 1280px) 24vw, (min-width: 768px) 32vw, 50vw"
-              className="object-contain opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+              className="object-contain object-center block opacity-0 transition-opacity duration-500 group-hover:opacity-100"
               showDemoTag={false}
             />
           ) : null}

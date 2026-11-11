@@ -27,6 +27,8 @@ export type CatalogVariant = {
   color: string;
   colorHex: string;
   size: string;
+  /** "standard" | "oversized" (lib/fits.ts) */
+  fit: string;
   stock: number;
   allowBackorder: boolean;
   lowStockThreshold: number;

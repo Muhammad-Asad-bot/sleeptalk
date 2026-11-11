@@ -26,7 +26,7 @@ export function CartLines({ lines, compact = false }: { lines: QuoteLine[]; comp
           <Link
             href={line.slug ? `/products/${line.slug}` : "#"}
             onClick={() => setCartOpen(false)}
-            className={cn("relative shrink-0 overflow-hidden bg-cream", compact ? "h-28 w-[88px]" : "h-36 w-28")}
+            className={cn("relative shrink-0 overflow-hidden bg-product", compact ? "h-28 w-[88px]" : "h-36 w-28")}
           >
             <SmartImage src={line.image} alt={line.imageAlt} fill sizes="112px" className="object-contain" showDemoTag={false} />
           </Link>

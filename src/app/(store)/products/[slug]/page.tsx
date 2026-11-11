@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
+import { SizeChart } from "@/components/content/size-chart";
 import { Breadcrumbs } from "@/components/listing/listing-page";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductView } from "@/components/product/product-view";
 import { RecentlyViewed } from "@/components/product/recently-viewed";
 import { ReviewsSection, Stars } from "@/components/product/reviews";
+import { garmentForCategory } from "@/content/size-chart";
 import { Markdown } from "@/lib/markdown";
 import { MARKETS } from "@/lib/markets";
 import { buildProductOptions } from "@/lib/product-options";
@@ -146,7 +148,12 @@ export default async function ProductPage({ params }: Props) {
             options={options}
             images={product.images}
             isDemo={product.isDemo}
-            sizeGuide={sizeGuide ? <Markdown source={sizeGuide.body} /> : <p className="text-sm">Size guide coming soon.</p>}
+            sizeGuide={
+              <>
+                <SizeChart initialGarment={garmentForCategory(product.categorySlug)} />
+                {sizeGuide ? <Markdown source={sizeGuide.body} className="prose-st mt-8" /> : null}
+              </>
+            }
             shippingSummary={marketConfig?.shippingSummary ?? "Shipping options are shown at checkout."}
             returnsSummary={marketConfig?.returnsSummary ?? ""}
             ratingSummary={

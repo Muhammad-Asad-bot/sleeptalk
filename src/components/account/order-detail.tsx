@@ -105,8 +105,8 @@ export function OrderDetail({ order }: { order: Order }) {
       <ul className="divide-y divide-line border-y border-line">
         {order.items.map((item) => (
           <li key={item.id} className="flex gap-4 py-4">
-            <div className="relative h-24 w-20 shrink-0 overflow-hidden bg-cream">
-              <SmartImage src={item.image || null} alt="" fill sizes="80px" className="object-cover" showDemoTag={false} />
+            <div className="relative h-24 w-20 shrink-0 overflow-hidden bg-product">
+              <SmartImage src={item.image || null} alt="" fill sizes="80px" className="object-contain object-center block" showDemoTag={false} />
             </div>
             <div className="flex-1 text-sm">
               <p className="font-medium">{item.title}</p>
