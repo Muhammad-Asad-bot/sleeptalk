@@ -160,32 +160,47 @@ export function AdminNav({ role, email, counts = {} }: { role: "staff" | "owner"
             <ul className="space-y-0.5">
               {g.items.map((i) => {
                 const active = isActive(pathname, i.href);
+                const enabled = i.href === "/admin/products" || i.href === "/admin/settings";
                 const count = counts[i.href] ?? 0;
+                const content = (
+                  <>
+                    <i.icon className="size-4 shrink-0" />
+                    <span className="flex-1">{i.label}</span>
+                    {count > 0 ? (
+                      <span
+                        title={`${count} ${i.hint ?? ""}`.trim()}
+                        className={cn(
+                          "min-w-5 px-1.5 py-px text-center text-[0.625rem] font-semibold tabular-nums",
+                          active ? "bg-ink text-canvas" : "bg-cream text-ink",
+                        )}
+                      >
+                        {count > 99 ? "99+" : count}
+                        <span className="sr-only"> {i.hint}</span>
+                      </span>
+                    ) : null}
+                  </>
+                );
                 return (
                   <li key={i.href}>
-                    <Link
-                      href={i.href}
-                      aria-current={active ? "page" : undefined}
-                      className={cn(
-                        "flex items-center gap-2.5 px-2.5 py-2 text-[0.8125rem] transition-colors",
-                        active ? "bg-canvas text-ink" : "text-canvas/75 hover:bg-canvas/10 hover:text-canvas",
-                      )}
-                    >
-                      <i.icon className="size-4 shrink-0" />
-                      <span className="flex-1">{i.label}</span>
-                      {count > 0 ? (
-                        <span
-                          title={`${count} ${i.hint ?? ""}`.trim()}
-                          className={cn(
-                            "min-w-5 px-1.5 py-px text-center text-[0.625rem] font-semibold tabular-nums",
-                            active ? "bg-ink text-canvas" : "bg-cream text-ink",
-                          )}
-                        >
-                          {count > 99 ? "99+" : count}
-                          <span className="sr-only"> {i.hint}</span>
-                        </span>
-                      ) : null}
-                    </Link>
+                    {enabled ? (
+                      <Link
+                        href={i.href}
+                        aria-current={active ? "page" : undefined}
+                        className={cn(
+                          "flex items-center gap-2.5 px-2.5 py-2 text-[0.8125rem] transition-colors",
+                          active ? "bg-canvas text-ink" : "text-canvas/75 hover:bg-canvas/10 hover:text-canvas",
+                        )}
+                      >
+                        {content}
+                      </Link>
+                    ) : (
+                      <span
+                        aria-disabled="true"
+                        className="flex cursor-not-allowed items-center gap-2.5 px-2.5 py-2 text-[0.8125rem] text-canvas/35"
+                      >
+                        {content}
+                      </span>
+                    )}
                   </li>
                 );
               })}

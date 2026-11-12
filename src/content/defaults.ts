@@ -1,7 +1,7 @@
 /**
  * Default store settings. Values are stored in the `settings` table and editable in
- * Admin → Store settings / Social links / Content. These defaults are placeholders:
- * no real business details are invented here.
+ * Admin → Store settings / Social links / Content. Business details are supplied
+ * by the store owner.
  */
 
 export type StoreSettings = {
@@ -62,7 +62,7 @@ export const DEFAULT_SETTINGS: SettingsMap = {
     motto: "SAY IT WITHOUT SAYING IT.",
     supportEmail: "sleeptalktoronto@proton.me",
     phone: "+1 (647) 512-6054",
-    address: "North York, Canada",
+    address: "3401 Dufferin St, North York, ON M6A 2T9, Canada",
     businessHours: "",
     demoMode: true,
     logoLight: "/brand/wordmark-light.png",
