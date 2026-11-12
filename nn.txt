@@ -1,0 +1,13 @@
+Resize and reformat this existing product image to **4:5 portrait aspect ratio (2000 × 2500 pixels)** for a premium Shopify clothing store.
+
+Requirements:
+- Preserve the exact original hoodie design, colour, logo, graphics, stitching and fabric details.
+- Keep the entire hoodie visible, including the hood, sleeves and cuffs.
+- Keep the hoodie centered and proportionally sized.
+- Extend the existing background naturally to fill the 4:5 canvas.
+- Maintain the original background colour, lighting and shadows.
+- Do not crop, stretch, distort, redesign or modify the garment.
+- Do not add text, badges, borders or other elements.
+- Maintain high image quality and sharpness.
+
+**Output:** One 2000 × 2500 px image, ready for Shopify product listing.

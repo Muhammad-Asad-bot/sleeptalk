@@ -40,7 +40,7 @@ export default async function HomePage() {
           );
         }
         case "categories":
-          return <CategoriesSection key={section.id} data={data} categories={categories} />;
+          return <CategoriesSection key={section.id} data={data} categories={categories.filter((category) => category.image)} />;
         case "new_arrivals": {
           const items = sortProducts(listed.filter((p) => p.isNewArrival && p.available), "newest").slice(0, limit(data, 8)).map(toCard);
           return <ProductRailSection key={section.id} data={data} products={items} listName="Home: new arrivals" />;

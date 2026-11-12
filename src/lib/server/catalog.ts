@@ -7,6 +7,7 @@ import {
   collectionProducts,
   collections,
   products,
+  productImages,
   reviews,
   slugRedirects,
   type CollectionRules,
@@ -402,7 +403,37 @@ export async function getListing(opts: {
 export const getCategories = cache(
   storeCached(async () => {
     const db = await getDb();
-    return db.select().from(categories).where(eq(categories.visible, true)).orderBy(asc(categories.position));
+    const rows = await db.select().from(categories).where(eq(categories.visible, true)).orderBy(asc(categories.position));
+    if (!rows.length) return rows;
+
+    const images = await db
+      .select({ categoryId: products.categoryId, url: productImages.url })
+      .from(products)
+      .innerJoin(productImages, eq(productImages.productId, products.id))
+      .where(
+        and(
+          inArray(products.categoryId, rows.map((category) => category.id)),
+          eq(products.status, "active"),
+          eq(products.isListed, true),
+          eq(products.isDemo, false),
+          eq(productImages.isDemo, false),
+        ),
+      )
+      .orderBy(asc(products.createdAt), asc(products.id), asc(productImages.position));
+
+    const firstProductImage = new Map<string, string>();
+    for (const image of images) {
+      if (image.categoryId && !firstProductImage.has(image.categoryId)) {
+        firstProductImage.set(image.categoryId, image.url);
+      }
+    }
+
+    return rows.map((category) => ({
+      ...category,
+      image:
+        firstProductImage.get(category.id) ??
+        (category.image.startsWith("/images/demo/") ? "" : category.image),
+    }));
   }, "categories"),
 );
 
