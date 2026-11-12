@@ -4,7 +4,7 @@ import { ArrowDown, ArrowUp, ImagePlus, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { saveProductAction, type ProductPayload } from "@/app/admin/_actions/products";
-import { addLibraryColourAction, quickCreateCategoryAction } from "@/app/admin/_actions/catalog";
+import { addLibraryColourAction, quickCreateCategoryAction, removeLibraryColourAction } from "@/app/admin/_actions/catalog";
 import { SmartImage } from "@/components/ui/smart-image";
 import { compressImage } from "@/lib/compress-image";
 import { variantLabel } from "@/lib/fits";
@@ -57,6 +57,9 @@ export function ProductEditor({
   const [newCategory, setNewCategory] = useState<string | null>(null);
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [library, setLibrary] = useState(colourLibrary);
+  const [saleMarkets, setSaleMarkets] = useState<Record<MarketCode, boolean>>(() =>
+    Object.fromEntries(MARKET_CODES.map((market) => [market, Boolean(initial.prices[market]?.compareAt.trim())])) as Record<MarketCode, boolean>,
+  );
 
   const createCategory = async () => {
     if (!newCategory?.trim()) return;
@@ -75,7 +78,15 @@ export function ProductEditor({
 
   const addToLibrary = async (colour: { name: string; hex: string }) => {
     const result = await addLibraryColourAction(colour);
-    if (result.ok) setLibrary(result.list);
+    if (!result.ok) return result.error;
+    setLibrary(result.list);
+    return null;
+  };
+  const removeFromLibrary = async (name: string) => {
+    const result = await removeLibraryColourAction(name);
+    if (!result.ok) return result.error;
+    setLibrary(result.list);
+    return null;
   };
   const [variants, setVariants] = useState<VariantRow[]>(() => {
     // Saved variants whose colour/size is switched off stay in the list (hidden) so they can be switched back on.
@@ -107,9 +118,10 @@ export function ProductEditor({
     delete copy.hiddenByGrid;
     return copy;
   };
-  const snapshotOf = (prod: EditorInitial, vs: object[], is: object[]) => JSON.stringify({ prod, vs, is });
-  const [initialSnapshot] = useState(() => snapshotOf(initial, variants.map(strip), images.map(strip)));
-  const dirty = !saved && !pending && snapshotOf(p, variants.map(strip), images.map(strip)) !== initialSnapshot;
+  const snapshotOf = (prod: EditorInitial, vs: object[], is: object[], sale: Record<MarketCode, boolean>) =>
+    JSON.stringify({ prod, vs, is, sale });
+  const [initialSnapshot] = useState(() => snapshotOf(initial, variants.map(strip), images.map(strip), saleMarkets));
+  const dirty = !saved && !pending && snapshotOf(p, variants.map(strip), images.map(strip), saleMarkets) !== initialSnapshot;
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();
@@ -142,6 +154,14 @@ export function ProductEditor({
 
   const save = () => {
     setError(null);
+    const incompleteSale = (markets.length ? markets : MARKET_CODES).find(
+      (market) => saleMarkets[market] && !p.prices[market]?.compareAt.trim(),
+    );
+    if (incompleteSale) {
+      setError(`Enter the original ${MARKETS[incompleteSale].currency} price to add this product to Sale.`);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     if (p.type === "standard" && !visibleVariants.length) {
       setError("Add at least one colour and one size before saving.");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -273,6 +293,7 @@ export function ProductEditor({
               {(markets.length ? markets : MARKET_CODES).map((m) => {
                 const price = p.prices[m] ?? { amount: "", compareAt: "", available: true };
                 const update = (patch: Partial<typeof price>) => set("prices", { ...p.prices, [m]: { ...price, ...patch } });
+                const onSale = saleMarkets[m];
                 return (
                   <fieldset key={m} className="border border-line p-4">
                     <legend className="px-1 text-xs font-semibold">{MARKETS[m].label} ({MARKETS[m].currency})</legend>
@@ -280,9 +301,25 @@ export function ProductEditor({
                       <AField label={`Price ${MARKETS[m].currencySymbol}`}>
                         <input inputMode="decimal" value={price.amount} onChange={(e) => update({ amount: e.target.value })} placeholder="e.g. 85" className={adminInput} />
                       </AField>
-                      <AField label="Compare-at (sale)" hint="Original price, if on sale">
-                        <input inputMode="decimal" value={price.compareAt} onChange={(e) => update({ compareAt: e.target.value })} className={adminInput} />
-                      </AField>
+                      <div className="flex items-center">
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={onSale}
+                            onChange={(e) => {
+                              setSaleMarkets((prev) => ({ ...prev, [m]: e.target.checked }));
+                              if (!e.target.checked) update({ compareAt: "" });
+                            }}
+                            className="size-4 accent-ink"
+                          />
+                          Add to Sale
+                        </label>
+                      </div>
+                      {onSale ? (
+                        <AField label="Compare-at price" hint="Enter the original price; it must be higher than the sale price." className="col-span-2">
+                          <input inputMode="decimal" value={price.compareAt} onChange={(e) => update({ compareAt: e.target.value })} className={adminInput} />
+                        </AField>
+                      ) : null}
                     </div>
                     <label className="mt-3 flex items-center gap-2 text-xs">
                       <input type="checkbox" checked={price.available} onChange={(e) => update({ available: e.target.checked })} className="size-4 accent-ink" />
@@ -315,6 +352,7 @@ export function ProductEditor({
                 productTitle={p.title}
                 library={library}
                 onLibraryAdd={addToLibrary}
+                onLibraryRemove={removeFromLibrary}
               />
               {visibleVariants.length ? (
                 <details className="mt-6 border-t border-line pt-4">

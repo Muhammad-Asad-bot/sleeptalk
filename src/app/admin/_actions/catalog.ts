@@ -151,6 +151,21 @@ export async function addLibraryColourAction(colour: LibraryColour): Promise<{ o
   return { ok: true, list };
 }
 
+/** Removes one colour from the shop library without changing products that already use it. */
+export async function removeLibraryColourAction(rawName: string): Promise<{ ok: true; list: LibraryColour[] } | { ok: false; error: string }> {
+  const user = await requireStaff();
+  const name = String(rawName ?? "").trim().replace(/\s+/g, " ").slice(0, 60);
+  if (!name) return { ok: false, error: "Choose a colour to remove." };
+  const { colours } = await getSettings();
+  const list = colours.list.filter((colour) => colour.name.toLowerCase() !== name.toLowerCase());
+  if (list.length === colours.list.length) return { ok: false, error: `“${name}” is no longer in the colour library. Refresh and try again.` };
+  await saveSetting("colours", { list });
+  await audit(user, "colours.removed", "settings", "colours", { name });
+  revalidatePath("/admin/colours");
+  refreshStorefront();
+  return { ok: true, list };
+}
+
 /** Creates a category from the product editor without leaving the page. */
 export async function quickCreateCategoryAction(rawName: string): Promise<{ ok: true; id: string; name: string } | { ok: false; error: string }> {
   const user = await requireStaff();

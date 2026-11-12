@@ -9,6 +9,7 @@ import { productImages, productPrices, products, setComponents, slugRedirects, s
 import { MARKET_CODES, parseMoneyInput } from "@/lib/markets";
 import { requireStaff } from "@/lib/server/auth";
 import { audit } from "@/lib/server/audit";
+import { back, str } from "@/lib/server/admin";
 import { slugify } from "@/lib/utils";
 import { FIT_CODES } from "@/lib/fits";
 
@@ -254,4 +255,31 @@ export async function setProductStatusAction(formData: FormData) {
   revalidatePath("/admin/products");
   revalidatePath(`/admin/products/${id}`);
   refreshStorefront();
+}
+
+export async function deleteProductAction(formData: FormData) {
+  const user = await requireStaff();
+  const id = str(formData, "id", 64);
+  if (!id) back("/admin/products", { error: "Product not found." });
+
+  const db = await getDb();
+  const [product] = await db.select().from(products).where(eq(products.id, id)).limit(1);
+  if (!product) back("/admin/products", { error: "Product not found." });
+
+  const [dependentSet] = await db
+    .select({ id: setComponents.setProductId })
+    .from(setComponents)
+    .where(eq(setComponents.componentProductId, id))
+    .limit(1);
+  if (dependentSet) {
+    back(`/admin/products/${id}`, { error: "This product is part of a tracksuit set. Remove it from the set before deleting it." });
+  }
+
+  await db.delete(products).where(eq(products.id, id));
+  await audit(user, "product.deleted", "product", id, { title: product.title, slug: product.slug });
+  revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${id}`);
+  revalidatePath(`/products/${product.slug}`);
+  refreshStorefront();
+  back("/admin/products", { ok: `Deleted “${product.title}”.` });
 }

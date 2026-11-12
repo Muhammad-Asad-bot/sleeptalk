@@ -33,7 +33,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
     <>
       <PageHeader
         title="Products"
-        description={`${rows.length} product${rows.length === 1 ? "" : "s"}. Archive products instead of deleting them so order history stays intact.`}
+        description={`${rows.length} product${rows.length === 1 ? "" : "s"}. Archive to hide and restore products; permanent deletion keeps saved order details intact.`}
         actions={<Link href="/admin/products/new" className={abtn("primary")}>Add product</Link>}
       />
       <Flash ok={sp.ok} error={sp.error} />
@@ -57,7 +57,6 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             <th className={thClass}>Product</th>
             <th className={thClass}>Category</th>
             <th className={thClass}>Status</th>
-            <th className={`${thClass} text-right`}>UK</th>
             <th className={`${thClass} text-right`}>Canada</th>
             <th className={`${thClass} text-right`}>Stock</th>
           </tr>
@@ -65,7 +64,6 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         <tbody>
           {rows.length ? (
             rows.map((p) => {
-              const uk = p.prices.find((x) => x.market === "UK");
               const ca = p.prices.find((x) => x.market === "CA");
               const stock = p.variants.filter((v) => v.active).reduce((n, v) => n + Math.max(0, v.stock), 0);
               return (
@@ -89,14 +87,13 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                   <td className={tdClass}>
                     <Badge color={p.status === "active" ? "green" : p.status === "draft" ? "amber" : "grey"}>{p.status}</Badge>
                   </td>
-                  <td className={`${tdClass} text-right tabular-nums`}>{uk ? formatMoney(uk.amount, "UK") : "—"}</td>
                   <td className={`${tdClass} text-right tabular-nums`}>{ca ? formatMoney(ca.amount, "CA").replace(" CAD", "") : "—"}</td>
                   <td className={`${tdClass} text-right tabular-nums`}>{p.type === "set" ? <span className="text-xs text-stone">from pieces</span> : <span className={stock < 5 ? "font-semibold text-sale" : ""}>{stock}</span>}</td>
                 </tr>
               );
             })
           ) : (
-            <EmptyRow colSpan={6}>No products match. <Link href="/admin/products/new" className="underline">Add a product</Link>.</EmptyRow>
+            <EmptyRow colSpan={5}>No products match. <Link href="/admin/products/new" className="underline">Add a product</Link>.</EmptyRow>
           )}
         </tbody>
       </Table>

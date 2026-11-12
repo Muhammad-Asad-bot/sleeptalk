@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { setProductStatusAction } from "@/app/admin/_actions/products";
+import { deleteProductAction, setProductStatusAction } from "@/app/admin/_actions/products";
 import { ProductEditor } from "@/components/admin/product-editor";
 import { abtn, Badge, Flash, PageHeader } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/client";
@@ -39,6 +39,15 @@ export default async function EditProductPage({ params, searchParams }: Props) {
                 confirm={product.status === "archived" ? undefined : "Archive this product? It will be hidden from the store (you can restore it later)."}
               >
                 {product.status === "archived" ? "Restore as draft" : "Archive"}
+              </SubmitButton>
+            </form>
+            <form action={deleteProductAction}>
+              <input type="hidden" name="id" value={product.id} />
+              <SubmitButton
+                className={abtn("danger")}
+                confirm="Permanently delete this product? This cannot be undone. Existing order history will keep its saved product details."
+              >
+                Delete product
               </SubmitButton>
             </form>
           </>

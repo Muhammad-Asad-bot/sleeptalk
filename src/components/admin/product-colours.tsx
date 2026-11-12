@@ -122,11 +122,13 @@ type Props = {
   /** Shop colour library (Admin → Colours): quick picks and two-tone halves. */
   library: { name: string; hex: string }[];
   /** Saves a newly made colour into the library so it can be reused on other products. */
-  onLibraryAdd?: (colour: { name: string; hex: string }) => void;
+  onLibraryAdd?: (colour: { name: string; hex: string }) => Promise<string | null>;
+  /** Removes a colour from the shared library without changing this product or other products. */
+  onLibraryRemove?: (name: string) => Promise<string | null>;
 };
 
-export function ColoursSection({ variants, setVariants, images, setImages, upload, uploading, productTitle, library, onLibraryAdd }: Props) {
-  const lib = library.length ? library : Object.entries(PRESET_COLOURS).map(([name, hex]) => ({ name, hex }));
+export function ColoursSection({ variants, setVariants, images, setImages, upload, uploading, productTitle, library, onLibraryAdd, onLibraryRemove }: Props) {
+  const lib = library.length || onLibraryRemove ? library : Object.entries(PRESET_COLOURS).map(([name, hex]) => ({ name, hex }));
   const libFind = (n: string) => lib.find((c) => c.name.toLowerCase() === n.trim().toLowerCase());
   const singles = lib.filter((c) => !c.hex.includes(","));
   const [colours, setColours] = useState<Colour[]>(() => gridFromVariants(variants).colours.map((c) => ({ key: newKey(), ...c })));
@@ -137,17 +139,47 @@ export function ColoursSection({ variants, setVariants, images, setImages, uploa
   const [newHex, setNewHex] = useState("#111111");
   const [saveToLibrary, setSaveToLibrary] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
+  const [removingLibraryColour, setRemovingLibraryColour] = useState<string | null>(null);
   const [combo, setCombo] = useState(() => ({ upper: singles[0]?.name ?? "Black", lower: singles[1]?.name ?? singles[0]?.name ?? "Cream" }));
   const comboHex = `${libFind(combo.upper)?.hex ?? "#141414"},${libFind(combo.lower)?.hex ?? "#E8E0D0"}`;
+
+  const removeLibraryColour = async (name: string) => {
+    if (!onLibraryRemove || !window.confirm(`Remove ${name} from the shared colour library? Colours already used on products will not change.`)) return;
+    setRemovingLibraryColour(name);
+    setNotice(null);
+    try {
+      const error = await onLibraryRemove(name);
+      if (error) {
+        setNotice(`Couldn't remove ${name} from the colour library: ${error}`);
+        return;
+      }
+      const remainingSingles = library.filter((c) => c.name.toLowerCase() !== name.toLowerCase() && !c.hex.includes(","));
+      setCombo((current) => {
+        const upper = remainingSingles.some((c) => c.name === current.upper) ? current.upper : (remainingSingles[0]?.name ?? "");
+        const lower = remainingSingles.some((c) => c.name === current.lower && c.name !== upper)
+          ? current.lower
+          : (remainingSingles.find((c) => c.name !== upper)?.name ?? "");
+        return { upper, lower };
+      });
+      setNotice(`Removed ${name} from the colour library. Existing products are unchanged.`);
+    } catch (error) {
+      setNotice(`Couldn't remove ${name} from the colour library: ${error instanceof Error ? error.message : "Please try again."}`);
+    } finally {
+      setRemovingLibraryColour(null);
+    }
+  };
 
   const applyColours = (next: Colour[], reactivate?: (v: ColourVariant) => boolean) => {
     setColours(next);
     setVariants((prev) => syncVariants(next, sizes, fitsBySize, prev, reactivate));
   };
 
-  const addColour = (rawName: string, hex?: string) => {
+  const addColour = async (rawName: string, hex?: string) => {
     const name = rawName.trim().replace(/\s+/g, " ");
-    if (!name) return;
+    if (!name) {
+      setNotice("Enter a colour name first.");
+      return;
+    }
     if (colours.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
       setNotice(`“${name}” is already added.`);
       return;
@@ -165,8 +197,16 @@ export function ColoursSection({ variants, setVariants, images, setImages, uploa
     const finalHex = hex ?? known?.hex ?? twoTone ?? "#111111";
     // Re-adding a colour that was removed earlier brings its saved sizes (and stock) back on sale.
     applyColours([...colours, { key: newKey(), name: finalName, hex: finalHex }], (v) => v.color === finalName);
-    if (saveToLibrary && !known && onLibraryAdd) onLibraryAdd({ name: finalName, hex: finalHex });
     setNewColour("");
+    setNotice(`Added ${finalName}. Save changes below to add it to this product.`);
+    if (saveToLibrary && !known && onLibraryAdd) {
+      try {
+        const error = await onLibraryAdd({ name: finalName, hex: finalHex });
+        if (error) setNotice(`Added to this product, but couldn't save to the colour library: ${error}`);
+      } catch (error) {
+        setNotice(`Added to this product, but couldn't save to the colour library: ${error instanceof Error ? error.message : "Please try again."}`);
+      }
+    }
   };
 
   const renameColour = (c: Colour, rawName: string) => {
@@ -420,16 +460,30 @@ export function ColoursSection({ variants, setVariants, images, setImages, uploa
           {lib
             .filter(({ name }) => !colours.some((c) => c.name.toLowerCase() === name.toLowerCase()))
             .map(({ name, hex }) => (
-              <button key={name} type="button" onClick={() => addColour(name, hex)} className="flex h-9 items-center gap-2 border border-line bg-white px-3 text-xs hover:border-ink">
-                <span className="size-4 border border-line" style={{ background: swatchBackground(hex) }} aria-hidden />
-                {name}
-              </button>
+              <span key={name} className="flex h-9 items-center border border-line bg-white">
+                <button type="button" onClick={() => void addColour(name, hex)} className="flex h-full items-center gap-2 px-3 text-xs hover:text-ink">
+                  <span className="size-4 border border-line" style={{ background: swatchBackground(hex) }} aria-hidden />
+                  {name}
+                </button>
+                {onLibraryRemove ? (
+                  <button
+                    type="button"
+                    onClick={() => void removeLibraryColour(name)}
+                    disabled={removingLibraryColour !== null}
+                    className="mr-1 grid size-7 place-items-center text-stone hover:text-sale disabled:opacity-50"
+                    aria-label={`Delete ${name} from colour library`}
+                    title="Delete from shared colour library"
+                  >
+                    {removingLibraryColour === name ? <span className="text-[0.625rem]">…</span> : <X className="size-3.5" />}
+                  </button>
+                ) : null}
+              </span>
             ))}
           <form
             className="flex items-center gap-1"
             onSubmit={(e) => {
               e.preventDefault();
-              addColour(newColour, libFind(newColour) ? undefined : newHex);
+              void addColour(newColour, libFind(newColour) ? undefined : newHex);
             }}
           >
             <input type="color" value={newHex} onChange={(e) => setNewHex(e.target.value)} className="h-8 w-9 cursor-pointer border border-line" aria-label="Shade for the new colour" title="Pick the shade" />
@@ -445,7 +499,7 @@ export function ColoursSection({ variants, setVariants, images, setImages, uploa
               setNotice("Pick two different colours for a two-tone combination.");
               return;
             }
-            addColour(`${combo.upper} / ${combo.lower}`, comboHex);
+            void addColour(`${combo.upper} / ${combo.lower}`, comboHex);
           }}
         >
           <span className="font-medium text-charcoal">Two-tone combination:</span>
