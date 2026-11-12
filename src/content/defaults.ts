@@ -80,7 +80,7 @@ export const DEFAULT_SETTINGS: SettingsMap = {
     enabled: true,
     messages: [
       "Say it without saying it.",
-      "Preview store — demo products and prices. Orders are not fulfilled.",
+      "Preview store — product catalogue is being prepared. Orders are not fulfilled.",
     ],
     link: "",
     dismissible: true,

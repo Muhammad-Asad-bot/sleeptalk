@@ -36,7 +36,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <label className="flex items-start gap-3 text-sm">
               <input type="checkbox" name="demoMode" defaultChecked={store.demoMode} className="mt-0.5 size-4 accent-ink" />
               <span>
-                <strong>Demo mode is {store.demoMode ? "ON" : "OFF"}.</strong> While on, placeholder contact details are labelled, demo products show a notice and empty social links still show placeholder icons. Turn off before launch, once real details, photography and policies are in place.
+                <strong>Demo mode is {store.demoMode ? "ON" : "OFF"}.</strong> While on, placeholder contact details are labelled and empty social links show placeholder icons. Demo products are not seeded; add real products from the catalogue when their details are ready.
               </span>
             </label>
           </Card>
