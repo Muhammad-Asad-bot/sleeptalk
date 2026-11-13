@@ -66,6 +66,8 @@ export type CatalogProduct = {
   isListed: boolean;
   isFeatured: boolean;
   isNewArrival: boolean;
+  preorder: boolean;
+  preorderMessage: string;
   isDemo: boolean;
   salesCount: number;
   publishedAt: Date | null;
@@ -90,7 +92,9 @@ export type ProductCardData = {
   image: CatalogImage | null;
   hoverImage: CatalogImage | null;
   colours: { name: string; hex: string }[];
-  badges: ("New" | "Sale" | "Sold out" | "Set")[];
+  badges: ("New" | "Sale" | "Sold out" | "Set" | "Pre-order")[];
+  preorder: boolean;
+  preorderMessage: string;
   available: boolean;
   isSet: boolean;
   requiresSelection: boolean;
@@ -156,14 +160,16 @@ async function buildCatalog(market: MarketCode): Promise<CatalogProduct[]> {
       }));
       sizes = sortSizes([...new Set(components.flatMap((c) => c.variants.filter((v) => v.active).map((v) => v.size)))]);
       available =
-        components.length > 0 && components.every((c) => c.status === "active") && names.some((n) => setAvailableInColour(components, n));
+        components.length > 0 &&
+        components.every((c) => c.status === "active") &&
+        (p.preorder || names.some((n) => setAvailableInColour(components, n)));
     } else {
       const active = variants.filter((v) => v.active);
       const seen = new Map<string, string>();
       for (const v of active) if (!seen.has(v.color)) seen.set(v.color, v.colorHex);
       colours = [...seen].map(([name, hex]) => ({ name, hex }));
       sizes = sortSizes([...new Set(active.map((v) => v.size))]);
-      available = active.some(variantInStock);
+      available = p.preorder || active.some(variantInStock);
     }
 
     result.push({
@@ -184,6 +190,8 @@ async function buildCatalog(market: MarketCode): Promise<CatalogProduct[]> {
       isListed: p.isListed,
       isFeatured: p.isFeatured,
       isNewArrival: p.isNewArrival,
+      preorder: p.preorder,
+      preorderMessage: p.preorderMessage,
       isDemo: p.isDemo,
       salesCount: p.salesCount,
       publishedAt: p.publishedAt,
@@ -227,8 +235,9 @@ export function availableUnits(p: CatalogProduct) {
 
 export function toCard(p: CatalogProduct): ProductCardData {
   const badges: ProductCardData["badges"] = [];
-  if (!p.available) badges.push("Sold out");
-  else if (p.compareAt) badges.push("Sale");
+  if (p.preorder) badges.push("Pre-order");
+  else if (!p.available) badges.push("Sold out");
+  if (p.compareAt) badges.push("Sale");
   if (p.isNewArrival) badges.push("New");
   if (p.type === "set") badges.push("Set");
   const first = p.images[0] ?? null;
@@ -247,6 +256,8 @@ export function toCard(p: CatalogProduct): ProductCardData {
     colours: p.colours,
     badges,
     available: p.available,
+    preorder: p.preorder,
+    preorderMessage: p.preorderMessage,
     isSet: p.type === "set",
     requiresSelection: !single,
     singleVariantId: single,

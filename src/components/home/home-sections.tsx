@@ -29,8 +29,11 @@ export function HeroSection({ data, social, demoMode = false }: { data: Data; so
       }
     : data;
   const configuredImage = str(heroData, "image");
-  const usesUrbanStepsImage = !configuredImage || configuredImage === "/brand/garment-back-artwork.jpg";
-  const image = usesUrbanStepsImage ? "/images/urban-steps-hero.png" : configuredImage;
+  const usesUrbanStepsImage =
+    !configuredImage ||
+    configuredImage === "/brand/garment-back-artwork.jpg" ||
+    configuredImage === "/images/urban-steps-hero.png";
+  const image = usesUrbanStepsImage ? "/images/urban-steps-hero.webp" : configuredImage;
   const imageAlt = usesUrbanStepsImage
     ? "Model wearing a SLEEP TALK hoodie on an urban concrete staircase"
     : str(heroData, "imageAlt");

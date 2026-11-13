@@ -111,6 +111,11 @@ export function OrderDetail({ order }: { order: Order }) {
             <div className="flex-1 text-sm">
               <p className="font-medium">{item.title}</p>
               <p className="text-xs text-ash">{item.variantLabel}</p>
+              {item.isPreorder ? (
+                <p className="mt-1 text-xs text-ink">
+                  Pre-order — {item.preorderMessage}. {order.status === "paid" ? "Payment was taken at checkout." : "Payment is due at checkout."}
+                </p>
+              ) : null}
               <p className="mt-1 text-xs text-stone">Qty {item.quantity} × {formatMoney(item.unitPrice, m)}</p>
             </div>
             <p className="text-sm tabular-nums">{formatMoney(item.lineTotal, m)}</p>

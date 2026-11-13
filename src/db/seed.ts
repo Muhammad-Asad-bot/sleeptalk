@@ -299,7 +299,7 @@ export async function seed(db: Db) {
           subheading: "Say it without saying it.",
           ctaLabel: "Shop the collection",
           ctaHref: "/shop",
-          image: "/images/urban-steps-hero.png",
+          image: "/images/urban-steps-hero.webp",
           imageAlt: "Model wearing a SLEEP TALK hoodie on an urban concrete staircase",
           video: "",
         },

@@ -80,12 +80,17 @@ export function QuickAddPanel({ productId, open, onClose }: { productId: string;
                 <p className="text-sm font-medium">{options.title}</p>
                 <Price amount={options.price} compareAt={options.compareAt} market={market} className="mt-1" />
                 {options.type === "set" ? <p className="mt-2 text-xs text-ash">Price is for the complete set.</p> : null}
+                {options.preorder ? (
+                  <p className="mt-2 text-xs text-ash">
+                    {options.preorderMessage} Payment is taken at checkout.
+                  </p>
+                ) : null}
               </div>
             </div>
             <VariantPicker options={options} selection={selection} onChange={onChange} showErrors={showErrors} idPrefix={`qa-${productId}`} />
             <div className="space-y-3">
               <button type="button" onClick={add} className={buttonClass("primary", "lg", "w-full")}>
-                Add to bag
+                {options.preorder ? "Pre-order now" : "Add to bag"}
               </button>
               <Link href={`/products/${options.slug}`} className="block text-center text-xs underline underline-offset-4" onClick={onClose}>
                 View full details

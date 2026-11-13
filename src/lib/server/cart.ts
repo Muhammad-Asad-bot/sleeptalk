@@ -100,6 +100,8 @@ export async function resolveCart(input: {
       issue: null,
       components: [],
       categoryId: product?.categoryId ?? null,
+      isPreorder: product?.preorder ?? false,
+      preorderMessage: product?.preorderMessage ?? "",
       demand: [],
     };
     if (!product) {
@@ -179,7 +181,7 @@ export async function resolveCart(input: {
 
   // Allocate stock across lines that may share variants
   const allocation = allocateStock(
-    drafts.filter((d) => !d.issue).map((d) => ({ key: d.key, quantity: d.requestedQuantity, demand: d.demand })),
+    drafts.filter((d) => !d.issue).map((d) => ({ key: d.key, quantity: d.requestedQuantity, demand: d.demand, isPreorder: d.isPreorder })),
     stockPool,
   );
   for (const d of drafts) {

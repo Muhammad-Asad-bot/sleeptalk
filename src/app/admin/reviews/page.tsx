@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { and, desc, eq, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { products, reviews } from "@/db/schema";
-import { moderateReviewAction } from "@/app/admin/_actions/sales";
-import { abtn, adminSelect, AField, Badge, FilterBar, Flash, PageHeader } from "@/components/admin/ui";
+import { createAdminReviewAction, moderateReviewAction } from "@/app/admin/_actions/sales";
+import { abtn, adminInput, adminSelect, adminTextarea, AField, Badge, Card, FilterBar, Flash, PageHeader } from "@/components/admin/ui";
 import { SubmitButton } from "@/components/admin/client";
 import { requireStaff } from "@/lib/server/auth";
 import { formatDateTime } from "@/lib/utils";
@@ -21,18 +21,45 @@ export default async function ReviewsAdminPage({ searchParams }: { searchParams:
   const status = sp.status ?? "pending";
   if (status !== "all" && status in STATUS_COLOR) where.push(eq(reviews.status, status as "pending"));
   if (sp.reported === "1") where.push(eq(reviews.reported, true));
-  const rows = await db
+  const [rows, productOptions] = await Promise.all([
+    db
     .select({ r: reviews, title: products.title, productId: products.id, slug: products.slug })
     .from(reviews)
     .innerJoin(products, eq(products.id, reviews.productId))
     .where(where.length ? and(...where) : undefined)
     .orderBy(desc(reviews.createdAt))
-    .limit(100);
+    .limit(100),
+    db.select({ id: products.id, title: products.title, status: products.status }).from(products).orderBy(asc(products.title)),
+  ]);
   const ret = `/admin/reviews?status=${status}${sp.reported === "1" ? "&reported=1" : ""}`;
   return (
     <>
       <PageHeader title="Reviews" description="Customer reviews appear on product pages only after approval. “Verified purchase” is set automatically from paid orders." />
       <Flash ok={sp.ok} error={sp.error} />
+      <Card title="Write a product review" className="mb-6">
+        <form action={createAdminReviewAction} className="grid gap-3 md:grid-cols-2">
+          <AField label="Product">
+            <select name="productId" required className={adminSelect} defaultValue="" disabled={!productOptions.length}>
+              <option value="" disabled>Select a product</option>
+              {productOptions.map((p) => <option key={p.id} value={p.id}>{p.title}{p.status !== "active" ? ` (${p.status})` : ""}</option>)}
+            </select>
+          </AField>
+          <AField label="Reviewer name"><input name="authorName" required maxLength={60} className={adminInput} /></AField>
+          <AField label="Rating">
+            <select name="rating" required defaultValue="5" className={adminSelect}>
+              {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} star{rating === 1 ? "" : "s"}</option>)}
+            </select>
+          </AField>
+          <AField label="Title (optional)"><input name="title" maxLength={120} className={adminInput} /></AField>
+          <AField label="Review" hint="20–3,000 characters" className="md:col-span-2">
+            <textarea name="body" required minLength={20} maxLength={3000} className={adminTextarea} />
+          </AField>
+          <p className="text-xs text-stone md:col-span-2">New reviews are added as pending and are never marked as verified purchases.</p>
+          <div className="md:col-span-2">
+            <SubmitButton disabled={!productOptions.length} className={abtn("primary")}>Add review</SubmitButton>
+          </div>
+        </form>
+      </Card>
       <FilterBar clearHref={(sp.status && sp.status !== "pending") || sp.reported ? "/admin/reviews" : undefined}>
         <AField label="Status">
           <select name="status" defaultValue={status} className={adminSelect}>

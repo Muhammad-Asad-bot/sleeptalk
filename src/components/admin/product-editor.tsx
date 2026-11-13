@@ -52,7 +52,11 @@ export function ProductEditor({
   colourLibrary?: { name: string; hex: string }[];
 }) {
   const router = useRouter();
-  const [p, setP] = useState(initial);
+  const [p, setP] = useState({
+    ...initial,
+    preorder: initial.preorder ?? false,
+    preorderMessage: initial.preorderMessage ?? "Ships as soon as possible",
+  });
   const [categoryList, setCategoryList] = useState(categories);
   const [newCategory, setNewCategory] = useState<string | null>(null);
   const [creatingCategory, setCreatingCategory] = useState(false);
@@ -154,6 +158,11 @@ export function ProductEditor({
 
   const save = () => {
     setError(null);
+    if (p.preorder && !p.preorderMessage.trim()) {
+      setError("Enter the shipping message for pre-orders.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     const incompleteSale = (markets.length ? markets : MARKET_CODES).find(
       (market) => saleMarkets[market] && !p.prices[market]?.compareAt.trim(),
     );
@@ -500,6 +509,24 @@ export function ProductEditor({
               <label className="flex items-center gap-2"><input type="checkbox" checked={p.isNewArrival} onChange={(e) => set("isNewArrival", e.target.checked)} className="size-4 accent-ink" /> New arrival</label>
               <label className="flex items-center gap-2"><input type="checkbox" checked={p.isFeatured} onChange={(e) => set("isFeatured", e.target.checked)} className="size-4 accent-ink" /> Featured (sorted first)</label>
               <p className="text-xs text-stone">Untick “Show in listings” for pieces only sold as part of a set.</p>
+              <div className="border-t border-line pt-3">
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={Boolean(p.preorder)} onChange={(e) => set("preorder", e.target.checked)} className="size-4 accent-ink" />
+                  Enable pre-orders
+                </label>
+                <p className="mt-1 text-xs text-stone">Accept orders for this product even when stock is zero. Customers pay at checkout.</p>
+                {p.preorder ? (
+                  <AField label="Pre-order shipping message" className="mt-3">
+                    <input
+                      value={p.preorderMessage ?? ""}
+                      onChange={(e) => set("preorderMessage", e.target.value)}
+                      className={adminInput}
+                      maxLength={180}
+                      placeholder="Ships as soon as possible"
+                    />
+                  </AField>
+                ) : null}
+              </div>
             </div>
           </Card>
         </div>

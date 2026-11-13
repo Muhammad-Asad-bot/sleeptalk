@@ -20,6 +20,8 @@ export type ReviewItem = {
   createdAt: string;
 };
 
+type ReviewAccess = "eligible" | "already-reviewed" | "not-eligible" | "sign-in";
+
 export function Stars({ value, size = 14, label }: { value: number; size?: number; label?: string }) {
   return (
     <span className="inline-flex items-center gap-0.5" role="img" aria-label={label ?? `${value.toFixed(1)} out of 5 stars`}>
@@ -69,6 +71,7 @@ export function ReviewsSection({
   average,
   distribution,
   signedInName,
+  reviewAccess,
 }: {
   productId: string;
   reviews: ReviewItem[];
@@ -76,6 +79,7 @@ export function ReviewsSection({
   average: number;
   distribution: { star: number; count: number }[];
   signedInName: string | null;
+  reviewAccess: ReviewAccess;
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const [reported, setReported] = useState<Set<string>>(new Set());
@@ -111,7 +115,7 @@ export function ReviewsSection({
             <p className="mt-4 text-sm text-ash">No reviews yet. Be the first to share your thoughts.</p>
           )}
           <div className="mt-8">
-            {signedInName ? (
+            {reviewAccess === "eligible" && signedInName ? (
               formOpen ? (
                 <ReviewForm productId={productId} defaultName={signedInName} />
               ) : (
@@ -119,12 +123,18 @@ export function ReviewsSection({
                   Write a review
                 </button>
               )
-            ) : (
+            ) : reviewAccess === "sign-in" ? (
               <p className="text-sm">
                 <Link href={`/login?next=${encodeURIComponent(pathname)}`} className="underline">
                   Sign in
                 </Link>{" "}
-                to write a review.
+                to check whether you can review this product.
+              </p>
+            ) : reviewAccess === "already-reviewed" ? (
+              <p className="text-sm text-ash">You’ve already submitted a review for this product.</p>
+            ) : (
+              <p className="text-sm text-ash">
+                Reviews are available to customers with a paid, delivered order, within 7 days of delivery.
               </p>
             )}
           </div>

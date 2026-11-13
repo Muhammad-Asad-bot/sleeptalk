@@ -12,6 +12,8 @@ export type ProductOptions = {
   type: "standard" | "set";
   price: number;
   compareAt: number | null;
+  preorder: boolean;
+  preorderMessage: string;
   categoryName: string | null;
   colours: { name: string; hex: string; available: boolean }[];
   imagesByColour: Record<string, string>;
@@ -22,9 +24,9 @@ export type ProductOptions = {
   fits: FitCode[];
 };
 
-function toOption(v: CatalogVariant, showLowStock: boolean): OptionVariant {
-  const available = v.active && (v.allowBackorder || v.stock > 0);
-  const low = showLowStock && available && !v.allowBackorder && v.stock <= v.lowStockThreshold ? v.stock : null;
+function toOption(v: CatalogVariant, showLowStock: boolean, preorder: boolean): OptionVariant {
+  const available = v.active && (preorder || v.allowBackorder || v.stock > 0);
+  const low = showLowStock && available && !preorder && !v.allowBackorder && v.stock <= v.lowStockThreshold ? v.stock : null;
   return { id: v.id, color: v.color, size: v.size, fit: isFit(v.fit) ? v.fit : "standard", available, lowStock: low };
 }
 
@@ -33,7 +35,7 @@ export function buildProductOptions(p: CatalogProduct, showLowStock: boolean): P
   for (const img of p.images) if (img.color && !imagesByColour[img.color]) imagesByColour[img.color] = img.url;
 
   const components = p.components.map((c) => {
-    const variants = c.variants.filter((v) => v.active).map((v) => toOption(v, showLowStock));
+    const variants = c.variants.filter((v) => v.active).map((v) => toOption(v, showLowStock, p.preorder));
     return {
       productId: c.productId,
       label: c.label,
@@ -44,7 +46,7 @@ export function buildProductOptions(p: CatalogProduct, showLowStock: boolean): P
       variants,
     };
   });
-  const variants = p.variants.filter((v) => v.active).map((v) => toOption(v, showLowStock));
+  const variants = p.variants.filter((v) => v.active).map((v) => toOption(v, showLowStock, p.preorder));
   // Sets: only fits every piece is made in (jacket and pants always share a fit).
   const fits =
     p.type === "set"
@@ -66,6 +68,8 @@ export function buildProductOptions(p: CatalogProduct, showLowStock: boolean): P
     type: p.type,
     price: p.price,
     compareAt: p.compareAt,
+    preorder: p.preorder,
+    preorderMessage: p.preorderMessage,
     categoryName: p.categoryName,
     colours,
     imagesByColour,

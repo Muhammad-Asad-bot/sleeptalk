@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { refreshStorefront } from "@/lib/server/store-cache";
 import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { contactMessages, discounts, reviews, sessions, users, type MarketAmounts } from "@/db/schema";
+import { contactMessages, discounts, products, reviews, sessions, users, type MarketAmounts } from "@/db/schema";
 import { MARKET_CODES, parseMoneyInput, type MarketCode } from "@/lib/markets";
 import { requireStaff } from "@/lib/server/auth";
 import { audit } from "@/lib/server/audit";
@@ -88,6 +88,10 @@ export async function toggleDiscountAction(formData: FormData) {
 
 /* ───────── Reviews ───────── */
 
+function sanitizeReviewText(text: string) {
+  return text.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").replace(/[<>]/g, "");
+}
+
 export async function moderateReviewAction(formData: FormData) {
   const user = await requireStaff();
   const id = str(formData, "id", 64);
@@ -100,6 +104,36 @@ export async function moderateReviewAction(formData: FormData) {
   revalidatePath("/admin/reviews");
   refreshStorefront();
   back(ret.startsWith("/admin") ? ret : "/admin/reviews", { ok: `Review ${status}.` });
+}
+
+export async function createAdminReviewAction(formData: FormData) {
+  const user = await requireStaff();
+  const productId = str(formData, "productId", 64);
+  const authorName = sanitizeReviewText(str(formData, "authorName", 60));
+  const rating = int(formData, "rating");
+  const title = sanitizeReviewText(str(formData, "title", 120));
+  const body = sanitizeReviewText(str(formData, "body", 3000));
+  const path = "/admin/reviews";
+  if (!productId) back(path, { error: "Choose a product." });
+  if (!authorName) back(path, { error: "Enter a reviewer name." });
+  if (rating == null || Number.isNaN(rating) || rating < 1 || rating > 5) back(path, { error: "Choose a rating from 1 to 5." });
+  if (body.length < 20) back(path, { error: "Review text must be at least 20 characters." });
+  const db = await getDb();
+  const [product] = await db.select({ id: products.id, title: products.title }).from(products).where(eq(products.id, productId)).limit(1);
+  if (!product) back(path, { error: "Product not found." });
+  const [review] = await db.insert(reviews).values({
+    productId: product.id,
+    userId: null,
+    authorName,
+    rating,
+    title,
+    body,
+    status: "pending",
+    verifiedPurchase: false,
+  }).returning({ id: reviews.id });
+  await audit(user, "review.created", "review", review.id, { productId: product.id, adminCreated: true });
+  revalidatePath(path);
+  back(path, { ok: `Review added for ${product.title}; approve it to show it on the store.` });
 }
 
 /* ───────── Customers ───────── */

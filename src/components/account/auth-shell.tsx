@@ -5,7 +5,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
   return (
     <div className="grid min-h-[calc(100svh-140px)] lg:grid-cols-2">
       <div className="on-dark relative hidden overflow-hidden bg-night lg:block">
-        <Image src="/images/urban-steps-hero.png" alt="" fill sizes="50vw" className="object-cover object-[60%_30%] opacity-80" />
+        <Image src="/images/urban-steps-hero.webp" alt="" fill sizes="50vw" className="object-cover object-[60%_30%] opacity-80" />
         <div className="absolute inset-0 bg-gradient-to-t from-night/80 via-night/20 to-night/30" aria-hidden />
         <div className="absolute inset-x-0 bottom-0 p-12 text-canvas">
           <p className="hero-title text-5xl">Say it without saying it.</p>

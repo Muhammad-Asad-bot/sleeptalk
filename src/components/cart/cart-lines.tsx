@@ -42,6 +42,7 @@ export function CartLines({ lines, compact = false }: { lines: QuoteLine[]; comp
                 </Link>
                 <p className="mt-1 text-xs text-ash">{line.variantLabel}</p>
                 {line.isSet ? <p className="mt-0.5 text-[0.6875rem] text-stone">Complete set price</p> : null}
+                {line.isPreorder ? <p className="mt-1 text-[0.6875rem] font-medium text-ink">Pre-order — {line.preorderMessage}</p> : null}
               </div>
               <p className="shrink-0 text-sm font-medium tabular-nums">
                 {line.quantity > 0 ? formatMoney(line.lineTotal, market) : "—"}

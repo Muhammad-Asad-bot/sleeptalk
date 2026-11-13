@@ -29,7 +29,8 @@ export async function updateFulfilmentAction(formData: FormData) {
   if (!order) back("/admin/orders", { error: "Order not found." });
   if (order.status !== "paid") back(path, { error: "Only paid orders can be fulfilled." });
 
-  await db.update(orders).set({ fulfillmentStatus: status, trackingNumber, carrier }).where(eq(orders.id, id));
+  const deliveredAt = status === "delivered" && order.fulfillmentStatus !== "delivered" ? new Date() : order.deliveredAt;
+  await db.update(orders).set({ fulfillmentStatus: status, deliveredAt, trackingNumber, carrier }).where(eq(orders.id, id));
   await audit(user, "order.fulfilment_updated", "order", id, {
     number: order.number,
     from: order.fulfillmentStatus,

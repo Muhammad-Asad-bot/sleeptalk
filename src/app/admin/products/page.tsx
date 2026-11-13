@@ -10,7 +10,7 @@ import { requireStaff } from "@/lib/server/auth";
 
 export const metadata: Metadata = { title: "Products" };
 
-type SP = { q?: string; status?: string; category?: string; ok?: string; error?: string };
+type SP = { q?: string; status?: string; category?: string; preorder?: string; ok?: string; error?: string };
 
 export default async function AdminProductsPage({ searchParams }: { searchParams: Promise<SP> }) {
   await requireStaff("/admin/products");
@@ -20,6 +20,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
   if (sp.q?.trim()) where.push(or(ilike(products.title, `%${sp.q.trim()}%`), ilike(products.slug, `%${sp.q.trim()}%`))!);
   if (sp.status && ["draft", "active", "archived"].includes(sp.status)) where.push(eq(products.status, sp.status as "draft"));
   if (sp.category) where.push(eq(products.categoryId, sp.category));
+  if (sp.preorder === "1") where.push(eq(products.preorder, true));
   const [rows, cats] = await Promise.all([
     db.query.products.findMany({
       where: where.length ? and(...where) : undefined,
@@ -37,7 +38,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         actions={<Link href="/admin/products/new" className={abtn("primary")}>Add product</Link>}
       />
       <Flash ok={sp.ok} error={sp.error} />
-      <FilterBar clearHref={sp.q || sp.status || sp.category ? "/admin/products" : undefined}>
+      <FilterBar clearHref={sp.q || sp.status || sp.category || sp.preorder ? "/admin/products" : undefined}>
         <AField label="Search" className="w-64"><input name="q" defaultValue={sp.q} placeholder="Title or slug" className={adminInput} /></AField>
         <AField label="Status">
           <select name="status" defaultValue={sp.status ?? ""} className={adminSelect}>
@@ -50,6 +51,10 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </AField>
+        <label className="flex items-center gap-2 pb-2 text-sm">
+          <input type="checkbox" name="preorder" value="1" defaultChecked={sp.preorder === "1"} className="size-4 accent-ink" />
+          Pre-order only
+        </label>
       </FilterBar>
       <Table>
         <thead>
@@ -77,6 +82,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                         <span className="font-medium hover:underline">{p.title}</span>
                         <span className="mt-0.5 flex flex-wrap gap-1">
                           {p.type === "set" ? <Badge color="black">Set</Badge> : null}
+                          {p.preorder ? <Badge color="blue">Pre-order</Badge> : null}
                           {!p.isListed ? <Badge>Unlisted</Badge> : null}
                           {p.isDemo ? <Badge color="amber">Demo</Badge> : null}
                         </span>

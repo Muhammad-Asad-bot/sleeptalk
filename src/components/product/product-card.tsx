@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useStore } from "@/components/providers/store-provider";
@@ -9,8 +10,9 @@ import { SmartImage } from "@/components/ui/smart-image";
 import { track } from "@/lib/analytics";
 import type { ProductCardData } from "@/lib/server/catalog";
 import { cn, swatchBackground } from "@/lib/utils";
-import { QuickAddPanel } from "./quick-add";
 import { WishlistButton } from "./wishlist-button";
+
+const QuickAddPanel = dynamic(() => import("./quick-add").then((module) => module.QuickAddPanel), { ssr: false });
 
 export function ProductCard({
   product,
@@ -77,6 +79,7 @@ export function ProductCard({
                   b === "New" && "bg-canvas text-ink",
                   b === "Sold out" && "bg-ink text-canvas",
                   b === "Set" && "bg-ink/80 text-canvas",
+                  b === "Pre-order" && "bg-ink text-canvas",
                 )}
               >
                 {b}
@@ -100,7 +103,7 @@ export function ProductCard({
               "translate-y-1 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 focus:translate-y-0 focus:opacity-100",
               "max-md:inset-x-auto max-md:right-2 max-md:size-9 max-md:translate-y-0 max-md:opacity-100",
             )}
-            aria-label={`Quick add ${product.title}`}
+            aria-label={`${product.preorder ? "Pre-order" : "Quick add"} ${product.title}`}
           >
             <Plus className="size-4" />
             <span className="max-md:sr-only">Quick add</span>
@@ -118,7 +121,9 @@ export function ProductCard({
           <Price amount={product.price} compareAt={product.compareAt} market={market} className="mt-1 text-[0.8125rem]" />
           {product.isSet ? <p className="text-[0.6875rem] text-stone">Complete set</p> : null}
           <p className="mt-1 text-[0.6875rem] text-ash">
-            {product.stock > 0 ? (
+            {product.preorder ? (
+              <span className="font-medium text-ink">Pre-order — {product.preorderMessage}</span>
+            ) : product.stock > 0 ? (
               <>
                 In stock:{" "}
                 <span className={cn("font-semibold tabular-nums", product.stock < 5 ? "text-sale" : "text-ink")}>{product.stock}</span>

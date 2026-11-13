@@ -59,6 +59,8 @@ export type QuoteLine = {
   issue: QuoteIssue | null;
   components: QuoteComponent[];
   categoryId: string | null;
+  isPreorder: boolean;
+  preorderMessage: string;
 };
 
 export type QuoteShippingOption = {

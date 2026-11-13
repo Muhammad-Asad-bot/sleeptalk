@@ -29,6 +29,20 @@
       "when": 1794468527995,
       "tag": "0003_remove_demo_products",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794584019293,
+      "tag": "0004_overjoyed_zzzax",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794586952878,
+      "tag": "0005_confused_phantom_reporter",
+      "breakpoints": true
     }
   ]
 }

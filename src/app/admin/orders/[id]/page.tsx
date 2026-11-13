@@ -59,6 +59,7 @@ export default async function AdminOrderPage({ params, searchParams }: Props) {
                     </p>
                     <p className="text-xs text-ash">{item.variantLabel}</p>
                     <p className="text-xs text-stone">SKU {item.sku}</p>
+                    {item.isPreorder ? <p className="mt-1"><Badge color="black">Pre-order</Badge><span className="ml-2 text-xs text-ash">{item.preorderMessage}</span></p> : null}
                     {item.components.length ? (
                       <ul className="mt-1 text-xs text-stone">
                         {item.components.map((c) => <li key={c.variantId}>{c.label}: {c.title} — {c.fit ? variantLabel({ ...c, fit: c.fit }, true) : `${c.color} / ${c.size}`} ({c.sku})</li>)}

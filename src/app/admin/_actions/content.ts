@@ -136,6 +136,7 @@ export async function saveAnnouncementAction(formData: FormData) {
     enabled: bool(formData, "enabled"),
     messages: str(formData, "messages", 2000).split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 6),
     link,
+    freeShippingText: str(formData, "freeShippingText", 160),
     dismissible: bool(formData, "dismissible"),
   };
   await saveSetting("announcement", value);

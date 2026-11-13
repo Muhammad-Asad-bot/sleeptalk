@@ -11,6 +11,7 @@ import { Markdown } from "@/lib/markdown";
 import { MARKETS } from "@/lib/markets";
 import { buildProductOptions } from "@/lib/product-options";
 import { getCurrentUser } from "@/lib/server/auth";
+import { getReviewEligibility } from "@/lib/server/review-eligibility";
 import {
   getProductBySlug,
   getProductReviews,
@@ -69,6 +70,7 @@ export default async function ProductPage({ params }: Props) {
     getPage("size-guide"),
     getCurrentUser(),
   ]);
+  const reviewAccess = user ? await getReviewEligibility(user.id, product.id) : "sign-in";
   const options = buildProductOptions(product, settings.inventory.showLowStock);
 
   const jsonLd = {
@@ -199,6 +201,7 @@ export default async function ProductPage({ params }: Props) {
         average={reviews.average}
         distribution={reviews.distribution}
         signedInName={user ? user.firstName || "Customer" : null}
+        reviewAccess={reviewAccess}
       />
 
       {related.length ? (

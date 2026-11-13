@@ -148,23 +148,25 @@ export function computeTotals(input: {
  * computed against a shared pool.
  */
 export function allocateStock(
-  lines: { key: string; quantity: number; demand: { variantId: string; perUnit: number }[] }[],
+  lines: { key: string; quantity: number; demand: { variantId: string; perUnit: number }[]; isPreorder?: boolean }[],
   stock: Map<string, { stock: number; allowBackorder: boolean }>,
 ) {
   const remaining = new Map<string, number>();
   for (const [id, v] of stock) remaining.set(id, v.allowBackorder ? Number.POSITIVE_INFINITY : Math.max(0, v.stock));
   const result = new Map<string, { maxQuantity: number; allocated: number }>();
-  for (const line of lines) {
+  const orderedLines = [...lines.filter((line) => !line.isPreorder), ...lines.filter((line) => line.isPreorder)];
+  for (const line of orderedLines) {
     let max = Number.POSITIVE_INFINITY;
     for (const d of line.demand) {
-      const r = remaining.get(d.variantId) ?? 0;
+      const available = remaining.get(d.variantId) ?? 0;
+      const r = line.isPreorder ? Number.POSITIVE_INFINITY : available;
       max = Math.min(max, Math.floor(r / d.perUnit));
     }
     if (!Number.isFinite(max)) max = 99;
     const allocated = Math.min(line.quantity, max);
     for (const d of line.demand) {
       const r = remaining.get(d.variantId) ?? 0;
-      remaining.set(d.variantId, r - allocated * d.perUnit);
+      if (Number.isFinite(r)) remaining.set(d.variantId, r - allocated * d.perUnit);
     }
     result.set(line.key, { maxQuantity: Math.min(max, 99), allocated });
   }

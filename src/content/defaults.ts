@@ -29,6 +29,7 @@ export type AnnouncementSettings = {
   enabled: boolean;
   messages: string[];
   link: string;
+  freeShippingText: string;
   dismissible: boolean;
 };
 
@@ -83,6 +84,7 @@ export const DEFAULT_SETTINGS: SettingsMap = {
       "Preview store — product catalogue is being prepared. Orders are not fulfilled.",
     ],
     link: "",
+    freeShippingText: "",
     dismissible: true,
   },
   seo: {

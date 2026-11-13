@@ -1,10 +1,11 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/db/client";
-import { orderItems, orders, products, reviews } from "@/db/schema";
+import { products, reviews } from "@/db/schema";
 import { getCurrentUser } from "@/lib/server/auth";
+import { getReviewEligibility } from "@/lib/server/review-eligibility";
 import { limitByIp } from "@/lib/server/security";
 import type { FormState } from "./store";
 
@@ -36,20 +37,11 @@ export async function submitReviewAction(_prev: FormState, formData: FormData): 
   const [product] = await db.select({ id: products.id }).from(products).where(eq(products.id, parsed.data.productId)).limit(1);
   if (!product) return { ok: false, message: "Product not found." };
 
-  const existing = await db
-    .select({ id: reviews.id })
-    .from(reviews)
-    .where(and(eq(reviews.productId, product.id), eq(reviews.userId, user.id)))
-    .limit(1);
-  if (existing.length) return { ok: false, message: "You've already reviewed this product." };
-
-  // Verified purchase only when an order record proves it.
-  const bought = await db
-    .select({ id: orders.id })
-    .from(orders)
-    .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
-    .where(and(eq(orders.userId, user.id), inArray(orders.status, ["paid"]), eq(orderItems.productId, product.id)))
-    .limit(1);
+  const eligibility = await getReviewEligibility(user.id, product.id);
+  if (eligibility === "already-reviewed") return { ok: false, message: "You've already reviewed this product." };
+  if (eligibility !== "eligible") {
+    return { ok: false, message: "Only customers with a paid, delivered order can review within 7 days of delivery." };
+  }
 
   await db.insert(reviews).values({
     productId: product.id,
@@ -59,7 +51,7 @@ export async function submitReviewAction(_prev: FormState, formData: FormData): 
     title: sanitize(parsed.data.title),
     body: sanitize(parsed.data.body),
     status: "pending",
-    verifiedPurchase: bought.length > 0,
+    verifiedPurchase: true,
   });
   return { ok: true, message: "Thanks! Your review has been submitted and will appear once it's approved." };
 }

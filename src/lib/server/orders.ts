@@ -40,9 +40,21 @@ function aggregate(demands: { variantId: string; qty: number }[]) {
   return map;
 }
 
-async function adjustStock(tx: Tx, variantId: string, delta: number, reason: "order" | "order_released" | "order_reinstated", orderId: string, conditional: boolean) {
+async function adjustStock(
+  tx: Tx,
+  variantId: string,
+  delta: number,
+  reason: "order" | "order_released" | "order_reinstated",
+  orderId: string,
+  conditional: boolean,
+  allowPreorder = false,
+  minStockRequired = -delta,
+) {
   const condition = conditional && delta < 0
-    ? and(eq(variants.id, variantId), or(gte(variants.stock, -delta), eq(variants.allowBackorder, true)))
+    ? and(
+        eq(variants.id, variantId),
+        or(gte(variants.stock, allowPreorder ? minStockRequired : -delta), eq(variants.allowBackorder, true)),
+      )
     : eq(variants.id, variantId);
   const updated = await tx
     .update(variants)
@@ -124,6 +136,18 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
 
   const accessToken = randomToken(24);
   const number = orderNumber();
+  const preorderVariants = new Set(
+    quote.lines
+      .filter((line) => line.isPreorder)
+      .flatMap((line) => (line.components.length ? line.components.map((component) => component.variantId) : line.variantId ? [line.variantId] : [])),
+  );
+  const normalDemand = aggregate(
+    quote.lines.filter((line) => !line.isPreorder).flatMap((line) => itemDemand({
+      variantId: line.isSet ? null : line.variantId,
+      quantity: line.quantity,
+      components: line.components,
+    })),
+  );
   let orderId: string;
   try {
     orderId = await db.transaction(async (tx) => {
@@ -166,6 +190,8 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
           quantity: l.quantity,
           lineTotal: l.lineTotal,
           components: l.components,
+          isPreorder: l.isPreorder,
+          preorderMessage: l.isPreorder ? l.preorderMessage : "",
         })),
       );
 
@@ -174,7 +200,8 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
         quote.lines.flatMap((l) => itemDemand({ variantId: l.isSet ? null : l.variantId, quantity: l.quantity, components: l.components })),
       );
       for (const [variantId, qty] of demand) {
-        await adjustStock(tx, variantId, -qty, "order", order.id, true);
+        const isPreorder = preorderVariants.has(variantId);
+        await adjustStock(tx, variantId, -qty, "order", order.id, true, isPreorder, isPreorder ? normalDemand.get(variantId) ?? 0 : qty);
       }
       return order.id;
     });
@@ -249,7 +276,9 @@ export async function markOrderPaid(orderId: string, evidence: { ref?: string | 
   if (outcome.ok && !outcome.already && "items" in outcome && outcome.items) {
     const o = outcome.order;
     const market = o.market;
-    const lines = outcome.items.map((i) => `- ${i.title} (${i.variantLabel}) × ${i.quantity} — ${formatMoney(i.lineTotal, market)}`).join("\n");
+    const lines = outcome.items
+      .map((i) => `- ${i.isPreorder ? "[PRE-ORDER] " : ""}${i.title} (${i.variantLabel}) × ${i.quantity} — ${formatMoney(i.lineTotal, market)}${i.isPreorder ? `\n  ${i.preorderMessage} Payment was taken at checkout.` : ""}`)
+      .join("\n");
     await sendEmail({
       to: o.email,
       subject: `SLEEP TALK — order ${o.number} confirmed`,

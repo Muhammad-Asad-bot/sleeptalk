@@ -2,9 +2,8 @@ import { StoreProvider } from "@/components/providers/store-provider";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
-import { SearchOverlay } from "@/components/layout/search-overlay";
+import { StoreOverlays } from "@/components/layout/store-overlays";
 import { CookieBanner } from "@/components/layout/cookie-banner";
-import { CartDrawer } from "@/components/cart/cart-drawer";
 import { getCurrentUser } from "@/lib/server/auth";
 import { getCategories, getLiveCollections } from "@/lib/server/catalog";
 import { getMarket } from "@/lib/server/market";
@@ -44,7 +43,8 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     getMarketConfigs(),
   ]);
   const activeMarkets = marketConfigs.filter((m) => m.active).map((m) => m.code);
-  const [collections, shippingNote] = await Promise.all([getLiveCollections(market), freeShippingText(activeMarkets)]);
+  const [collections, generatedShippingNote] = await Promise.all([getLiveCollections(market), freeShippingText(activeMarkets)]);
+  const shippingNote = generatedShippingNote ? settings.announcement.freeShippingText.trim() || generatedShippingNote : null;
 
   return (
     <StoreProvider market={market} isAuthed={!!user}>
@@ -68,8 +68,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
         {children}
       </main>
       <SiteFooter settings={settings} market={market} markets={activeMarkets} />
-      <CartDrawer />
-      <SearchOverlay />
+      <StoreOverlays />
       <CookieBanner />
     </StoreProvider>
   );

@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart3,
   Boxes,
   ClipboardList,
+  Clock,
   CornerDownLeft,
   ExternalLink,
   FileText,
@@ -56,6 +57,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
     title: "Catalogue",
     items: [
       { href: "/admin/products", label: "Products", icon: Shirt, keywords: "items hoodies tracksuits" },
+      { href: "/admin/products?preorder=1", label: "Pre-orders", icon: Clock, keywords: "preorder pre-order" },
       { href: "/admin/inventory", label: "Inventory", icon: Boxes, hint: "low stock", keywords: "stock sku quantity" },
       { href: "/admin/categories", label: "Categories", icon: FolderTree, keywords: "new category menu" },
       { href: "/admin/colours", label: "Colours", icon: Palette, keywords: "colors swatch two-tone" },
@@ -100,16 +102,24 @@ const SEARCHES = [
   { base: "/admin/inventory", label: "inventory (SKU, colour)", icon: Boxes },
 ];
 
-function isActive(pathname: string, href: string) {
-  if (href === "/admin") return pathname === "/admin";
-  if (href === "/admin/content") return pathname === "/admin/content" || pathname.startsWith("/admin/content/sections");
-  return pathname === href || pathname.startsWith(`${href}/`);
+function isActive(pathname: string, href: string, searchParams: URLSearchParams) {
+  const [path, query] = href.split("?", 2);
+  if (query) {
+    return pathname === path && [...new URLSearchParams(query)].every(([key, value]) => searchParams.get(key) === value);
+  }
+  if (path === "/admin/products" && searchParams.get("preorder") === "1") return false;
+  if (path === "/admin") return pathname === "/admin";
+  if (path === "/admin/content") {
+    return pathname === "/admin/content" || pathname.startsWith("/admin/content/sections") || pathname === "/admin/content/announcement";
+  }
+  return pathname === path || pathname.startsWith(`${path}/`);
 }
 
 type Counts = Partial<Record<string, number>>;
 
 export function AdminNav({ role, email, counts = {} }: { role: "staff" | "owner"; email: string; counts?: Counts }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const [findOpen, setFindOpen] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect -- close mobile nav on navigation
@@ -159,8 +169,15 @@ export function AdminNav({ role, email, counts = {} }: { role: "staff" | "owner"
             <p className="px-2 pb-1.5 text-[0.5625rem] font-semibold uppercase tracking-[0.18em] text-canvas/40">{g.title}</p>
             <ul className="space-y-0.5">
               {g.items.map((i) => {
-                const active = isActive(pathname, i.href);
-                const enabled = i.href === "/admin/products" || i.href === "/admin/settings";
+                const active = isActive(pathname, i.href, searchParams);
+                const enabled =
+                  i.href === "/admin/products" ||
+                  i.href === "/admin/settings" ||
+                  i.href === "/admin/colours" ||
+                  i.href === "/admin/reviews" ||
+                  i.href === "/admin/social-links" ||
+                  i.href === "/admin/content/announcement" ||
+                  i.href === "/admin/products?preorder=1";
                 const count = counts[i.href] ?? 0;
                 const content = (
                   <>

@@ -353,6 +353,7 @@ export function CheckoutView({
                       <div className="min-w-0 flex-1 text-xs">
                         <p className="font-medium">{l.title}</p>
                         <p className="text-ash">{l.variantLabel}</p>
+                        {l.isPreorder ? <p className="mt-1 text-[0.6875rem] text-ink">Pre-order — {l.preorderMessage}</p> : null}
                         {l.issue ? <p className="text-sale">Unavailable — please <Link href="/cart" className="underline">review your bag</Link></p> : null}
                       </div>
                       <p className="text-xs tabular-nums">{formatMoney(l.lineTotal, market)}</p>

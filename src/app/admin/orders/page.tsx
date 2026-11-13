@@ -51,6 +51,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
       .select({
         o: orders,
         items: sql<number>`(select coalesce(sum(oi.quantity),0) from order_items oi where oi.order_id = "orders"."id")`.mapWith(Number),
+        preorders: sql<number>`(select count(*) from order_items oi where oi.order_id = "orders"."id" and oi.is_preorder = true)`.mapWith(Number),
       })
       .from(orders)
       .where(cond)
@@ -101,11 +102,12 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         </thead>
         <tbody>
           {rows.length ? (
-            rows.map(({ o, items }) => (
+            rows.map(({ o, items, preorders }) => (
               <tr key={o.id} className="hover:bg-paper">
                 <td className={tdClass}>
                   <Link href={`/admin/orders/${o.id}`} className="font-semibold underline-offset-4 hover:underline">{o.number}</Link>
                   {o.isTest ? <span className="ml-2"><Badge>Test</Badge></span> : null}
+                  {preorders ? <span className="ml-2"><Badge color="black">Pre-order</Badge></span> : null}
                 </td>
                 <td className={`${tdClass} whitespace-nowrap text-ash`}>{formatDateTime(o.createdAt)}</td>
                 <td className={`${tdClass} max-w-[220px] truncate`}>

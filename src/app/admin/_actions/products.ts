@@ -31,6 +31,8 @@ const productSchema = z.object({
   isListed: z.boolean(),
   isFeatured: z.boolean(),
   isNewArrival: z.boolean(),
+  preorder: z.boolean(),
+  preorderMessage: z.string().trim().max(180),
   tags: z.array(z.string().trim().toLowerCase().max(40)).max(30),
   seoTitle: z.string().max(140),
   seoDescription: z.string().max(320),
@@ -74,6 +76,7 @@ export async function saveProductAction(payload: ProductPayload): Promise<SavePr
   const parsed = productSchema.safeParse(payload);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Please check the form." };
   const data = parsed.data;
+  if (data.preorder && !data.preorderMessage) return { ok: false, error: "Enter the shipping message for pre-orders." };
   const slug = slugify(data.slug || data.title);
   if (!slug) return { ok: false, error: "Enter a URL slug." };
 
@@ -135,6 +138,8 @@ export async function saveProductAction(payload: ProductPayload): Promise<SavePr
       isListed: data.isListed,
       isFeatured: data.isFeatured,
       isNewArrival: data.isNewArrival,
+      preorder: data.preorder,
+      preorderMessage: data.preorderMessage,
       tags: [...new Set(data.tags.filter(Boolean))],
       seoTitle: data.seoTitle,
       seoDescription: data.seoDescription,

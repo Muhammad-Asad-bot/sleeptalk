@@ -18,7 +18,7 @@ export type NavCollection = { slug: string; title: string; image: string };
 
 const PRIMARY_LINKS = [
   { href: "/new-arrivals", label: "New Arrivals" },
-  { href: "/collections", label: "Collections" },
+  { href: "/pre-order", label: "Pre-order" },
   { href: "/sale", label: "Sale" },
   { href: "/about", label: "About" },
 ];
@@ -288,6 +288,7 @@ export function SiteHeader({
                     {[
                       { href: "/new-arrivals", label: "New arrivals" },
                       { href: "/best-sellers", label: "Best sellers" },
+                      { href: "/pre-order", label: "Pre-order" },
                       { href: "/shop/tracksuits?type=set", label: "Complete sets" },
                       { href: "/sale", label: "Sale", accent: true },
                     ].map((l) => (

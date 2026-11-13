@@ -83,7 +83,7 @@ export function ProductView({
     return true;
   };
 
-  const maxQty = resolved.lowStock ?? 10;
+  const maxQty = options.preorder ? 20 : resolved.lowStock ?? 10;
 
   return (
     <div className="grid gap-8 lg:grid-cols-12 lg:gap-12">
@@ -127,13 +127,18 @@ export function ProductView({
                 disabled={!anyAvailable || resolved.soldOut}
                 className={buttonClass("primary", "lg", "flex-1")}
               >
-                {!anyAvailable ? "Sold out" : resolved.soldOut ? "Sold out in this size" : "Add to bag"}
+                {!anyAvailable ? "Sold out" : resolved.soldOut ? "Sold out in this size" : options.preorder ? "Pre-order now" : "Add to bag"}
               </button>
             </div>
             {anyAvailable ? (
               <button type="button" onClick={() => add(true)} disabled={resolved.soldOut} className={buttonClass("secondary", "lg", "w-full")}>
-                Buy now
+                {options.preorder ? "Pre-order & pay now" : "Buy now"}
               </button>
+            ) : null}
+            {options.preorder ? (
+              <p className="text-xs text-ash">
+                {options.preorderMessage} Payment is taken at checkout.
+              </p>
             ) : null}
           </div>
 
@@ -185,7 +190,7 @@ export function ProductView({
             onClick={() => add(false)}
             className={buttonClass("primary", "md", "ml-auto flex-1 sm:flex-none sm:min-w-56")}
           >
-            {resolved.line ? "Add to bag" : "Select size"}
+            {resolved.line ? (options.preorder ? "Pre-order now" : "Add to bag") : "Select size"}
           </button>
         </div>
       </div>
