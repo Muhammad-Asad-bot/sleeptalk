@@ -11,7 +11,7 @@ import type { FormState } from "./store";
 
 const reviewSchema = z.object({
   productId: z.string().min(1).max(64),
-  rating: z.coerce.number().int().min(1, "Choose a rating").max(5),
+  rating: z.coerce.number({ error: "Choose a rating" }).int().min(1, "Choose a rating").max(5, "Choose a rating"),
   title: z.string().trim().max(120).optional().default(""),
   body: z.string().trim().min(20, "Please write at least 20 characters").max(3000),
   authorName: z.string().trim().min(1, "Enter a display name").max(60),

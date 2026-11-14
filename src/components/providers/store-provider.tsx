@@ -88,13 +88,14 @@ export function StoreProvider({
     const stored = readJson<{ lines: CartLineInput[]; discountCode: string | null }>(CART_KEY, { lines: [], discountCode: null });
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration from localStorage
     setLines(Array.isArray(stored.lines) ? stored.lines : []);
-    setDiscountCodeState(stored.discountCode ?? null);
+    // Discount codes are switched off: drop any code saved in a shopper's cart from before.
+    setDiscountCodeState(null);
     setHydrated(true);
     const onStorage = (e: StorageEvent) => {
       if (e.key === CART_KEY && e.newValue) {
         const next = JSON.parse(e.newValue) as { lines: CartLineInput[]; discountCode: string | null };
         setLines(next.lines ?? []);
-        setDiscountCodeState(next.discountCode ?? null);
+        setDiscountCodeState(null);
       }
     };
     window.addEventListener("storage", onStorage);

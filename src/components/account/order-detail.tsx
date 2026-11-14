@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { AddressFields, orderItems, orders } from "@/db/schema";
 import { SmartImage } from "@/components/ui/smart-image";
 import { formatMoney } from "@/lib/markets";
-import { cn, formatDateTime } from "@/lib/utils";
+import type { OrderReviewPrompt, OrderReviewPrompts } from "@/lib/server/review-eligibility";
+import { cn, formatDate, formatDateTime } from "@/lib/utils";
 
 type Order = typeof orders.$inferSelect & { items: (typeof orderItems.$inferSelect)[] };
 
@@ -92,11 +93,38 @@ function RefundNote({ order }: { order: Order }) {
   );
 }
 
-export function OrderDetail({ order }: { order: Order }) {
+/** Invitation to review, shown once the order is delivered (see getOrderReviewPrompts). */
+function ReviewInvite({ reviews }: { reviews: OrderReviewPrompts }) {
+  const open = Object.values(reviews.byProduct).some((p) => p.state !== "already-reviewed");
+  return (
+    <div className="border border-ink bg-paper p-4 text-sm">
+      <p className="font-medium">{open ? "How was your order?" : "Thanks for your feedback"}</p>
+      <p className="mt-1 text-ash">
+        {open
+          ? <>Tell others what you think of your pieces. Reviews are open until <strong className="text-ink">{formatDate(reviews.closesAt)}</strong> and appear on the product page once our team has checked them.</>
+          : "You've reviewed everything in this order. Your reviews appear on the product page once our team has checked them."}
+      </p>
+    </div>
+  );
+}
+
+function ReviewLink({ prompt }: { prompt: OrderReviewPrompt }) {
+  if (prompt.state === "already-reviewed") return <p className="mt-2 text-xs text-success">✓ You&apos;ve reviewed this</p>;
+  const href = prompt.state === "eligible" ? `/products/${prompt.slug}#reviews` : `/login?next=${encodeURIComponent(`/products/${prompt.slug}`)}`;
+  return (
+    <Link href={href} className="mt-2 inline-block text-xs font-medium underline underline-offset-4">
+      {prompt.state === "eligible" ? "Write a review" : "Sign in to write a review"}
+    </Link>
+  );
+}
+
+export function OrderDetail({ order, reviews = null }: { order: Order; reviews?: OrderReviewPrompts | null }) {
   const m = order.market;
+  const prompted = new Set<string>();
   return (
     <div className="space-y-8">
       <OrderProgress order={order} />
+      {reviews ? <ReviewInvite reviews={reviews} /> : null}
       {order.trackingNumber ? (
         <p className="bg-paper p-4 text-sm">
           Tracking: <strong>{order.carrier ? `${order.carrier} ` : ""}{order.trackingNumber}</strong>
@@ -117,6 +145,13 @@ export function OrderDetail({ order }: { order: Order }) {
                 </p>
               ) : null}
               <p className="mt-1 text-xs text-stone">Qty {item.quantity} × {formatMoney(item.unitPrice, m)}</p>
+              {(() => {
+                // One review per product: only the first line of a product gets the link.
+                const prompt = item.productId ? reviews?.byProduct[item.productId] : undefined;
+                if (!prompt || prompted.has(item.productId!)) return null;
+                prompted.add(item.productId!);
+                return <ReviewLink prompt={prompt} />;
+              })()}
             </div>
             <p className="text-sm tabular-nums">{formatMoney(item.lineTotal, m)}</p>
           </li>

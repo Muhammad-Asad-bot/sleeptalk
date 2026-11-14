@@ -1,58 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useStore } from "@/components/providers/store-provider";
 import type { CartQuote } from "@/lib/cart-types";
 import { formatMoney } from "@/lib/markets";
-
-export function DiscountForm() {
-  const { discountCode, setDiscountCode, quote } = useStore();
-  const [code, setCode] = useState("");
-  const applied = quote?.discount;
-  if (discountCode && applied && !applied.error) {
-    return (
-      <div className="flex items-center justify-between bg-paper px-3 py-2.5 text-xs">
-        <span>
-          Code <strong>{applied.code}</strong> applied
-        </span>
-        <button type="button" className="underline" onClick={() => setDiscountCode(null)}>
-          Remove
-        </button>
-      </div>
-    );
-  }
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (code.trim()) setDiscountCode(code.trim().toUpperCase());
-      }}
-      className="space-y-2"
-    >
-      <label htmlFor="discount-code" className="text-xs font-medium">Discount code</label>
-      <div className="flex">
-        <input
-          id="discount-code"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          className="h-11 w-full border border-r-0 border-line bg-paper px-3 text-sm uppercase focus:border-ink focus:outline-none"
-          autoComplete="off"
-          aria-invalid={applied?.error ? true : undefined}
-          aria-describedby={applied?.error ? "discount-error" : undefined}
-        />
-        <button type="submit" className="h-11 shrink-0 bg-ink px-4 text-xs font-semibold uppercase tracking-[0.12em] text-canvas">
-          Apply
-        </button>
-      </div>
-      {discountCode && applied?.error ? (
-        <p id="discount-error" role="alert" className="text-xs text-sale">
-          {applied.code}: {applied.error}{" "}
-          <button type="button" className="underline" onClick={() => setDiscountCode(null)}>Clear</button>
-        </p>
-      ) : null}
-    </form>
-  );
-}
 
 export function TotalsTable({ quote, showShipping }: { quote: CartQuote; showShipping: boolean }) {
   const m = quote.market;

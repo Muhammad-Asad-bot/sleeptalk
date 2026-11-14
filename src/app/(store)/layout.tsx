@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { StoreOverlays } from "@/components/layout/store-overlays";
 import { CookieBanner } from "@/components/layout/cookie-banner";
 import { getCurrentUser } from "@/lib/server/auth";
-import { getCategories, getLiveCollections } from "@/lib/server/catalog";
+import { getCategories } from "@/lib/server/catalog";
 import { getMarket } from "@/lib/server/market";
 import { getMarketConfigs, getSettings, getShippingRates } from "@/lib/server/settings";
 import { MARKETS, type MarketCode } from "@/lib/markets";
@@ -43,7 +43,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     getMarketConfigs(),
   ]);
   const activeMarkets = marketConfigs.filter((m) => m.active).map((m) => m.code);
-  const [collections, generatedShippingNote] = await Promise.all([getLiveCollections(market), freeShippingText(activeMarkets)]);
+  const generatedShippingNote = await freeShippingText(activeMarkets);
   const shippingNote = generatedShippingNote ? settings.announcement.freeShippingText.trim() || generatedShippingNote : null;
 
   return (
@@ -57,7 +57,6 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <AnnouncementBar settings={settings.announcement} freeShippingText={shippingNote} market={market} markets={activeMarkets} />
       <SiteHeader
         categories={categories.map((c) => ({ slug: c.slug, name: c.name, image: c.image }))}
-        collections={collections.map((c) => ({ slug: c.slug, title: c.title, image: c.image }))}
         market={market}
         markets={activeMarkets}
         userName={user ? user.firstName || user.email : null}

@@ -20,7 +20,6 @@ const SHOP = [
   { href: "/shop", label: "All products" },
   { href: "/new-arrivals", label: "New arrivals" },
   { href: "/best-sellers", label: "Best sellers" },
-  { href: "/collections", label: "Collections" },
   { href: "/sale", label: "Sale" },
 ];
 const LEGAL = [

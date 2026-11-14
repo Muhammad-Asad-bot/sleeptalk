@@ -10,21 +10,17 @@ import {
   Clock,
   CornerDownLeft,
   ExternalLink,
-  FileText,
   FolderTree,
   Inbox,
-  LayoutGrid,
   LogOut,
   Menu,
   Megaphone,
   Palette,
   MessageSquareQuote,
-  Percent,
   Plus,
   ScrollText,
   Search,
   Settings,
-  Shapes,
   Share2,
   Shirt,
   Truck,
@@ -49,7 +45,6 @@ const GROUPS: { title: string; items: Item[] }[] = [
     items: [
       { href: "/admin/orders", label: "Orders", icon: ClipboardList, hint: "to fulfil", keywords: "fulfil ship refund tracking" },
       { href: "/admin/customers", label: "Customers", icon: Users, keywords: "people accounts" },
-      { href: "/admin/discounts", label: "Discounts", icon: Percent, keywords: "codes coupons promo" },
       { href: "/admin/messages", label: "Messages", icon: Inbox, hint: "open", keywords: "contact inbox email" },
     ],
   },
@@ -61,15 +56,12 @@ const GROUPS: { title: string; items: Item[] }[] = [
       { href: "/admin/inventory", label: "Inventory", icon: Boxes, hint: "low stock", keywords: "stock sku quantity" },
       { href: "/admin/categories", label: "Categories", icon: FolderTree, keywords: "new category menu" },
       { href: "/admin/colours", label: "Colours", icon: Palette, keywords: "colors swatch two-tone" },
-      { href: "/admin/collections", label: "Collections", icon: Shapes, keywords: "drops" },
       { href: "/admin/reviews", label: "Reviews", icon: MessageSquareQuote, hint: "pending", keywords: "ratings moderate" },
     ],
   },
   {
     title: "Storefront",
     items: [
-      { href: "/admin/content", label: "Homepage & content", icon: LayoutGrid, keywords: "hero sections banner" },
-      { href: "/admin/content/pages", label: "Pages", icon: FileText, keywords: "faq about policy terms" },
       { href: "/admin/content/announcement", label: "Announcement bar", icon: Megaphone },
       { href: "/admin/social-links", label: "Social links", icon: Share2, keywords: "instagram tiktok" },
       { href: "/admin/shipping", label: "Shipping & markets", icon: Truck, keywords: "delivery rates uk canada" },
@@ -88,8 +80,6 @@ const GROUPS: { title: string; items: Item[] }[] = [
 /** Shortcuts offered in Quick find. */
 const ACTIONS: Item[] = [
   { href: "/admin/products/new", label: "Add a product", icon: Plus, keywords: "new create" },
-  { href: "/admin/discounts/new", label: "Create a discount code", icon: Plus, keywords: "new coupon promo" },
-  { href: "/admin/collections/new", label: "Create a collection", icon: Plus, keywords: "new drop" },
   { href: "/admin/orders?status=paid&fulfillment=unfulfilled", label: "Orders to fulfil", icon: ClipboardList, keywords: "ship pack" },
   { href: "/admin/inventory?filter=low", label: "Low-stock variants", icon: Boxes, keywords: "restock" },
 ];
@@ -109,21 +99,68 @@ function isActive(pathname: string, href: string, searchParams: URLSearchParams)
   }
   if (path === "/admin/products" && searchParams.get("preorder") === "1") return false;
   if (path === "/admin") return pathname === "/admin";
-  if (path === "/admin/content") {
-    return pathname === "/admin/content" || pathname.startsWith("/admin/content/sections") || pathname === "/admin/content/announcement";
-  }
   return pathname === path || pathname.startsWith(`${path}/`);
 }
 
 type Counts = Partial<Record<string, number>>;
 
-export function AdminNav({ role, email, counts = {} }: { role: "staff" | "owner"; email: string; counts?: Counts }) {
+/** Refetch interval for the sidebar badges while the admin tab is visible. */
+const COUNTS_REFRESH_MS = 30_000;
+
+/**
+ * Keeps the "needs attention" badges current. The admin layout renders them once and Next keeps
+ * layouts between page visits, so without this a new review or message (or one just handled)
+ * wouldn't show until a full reload. Refreshes on every admin navigation, when the tab regains
+ * focus, and every 30 seconds while it's visible.
+ */
+function useLiveCounts(initial: Counts, pathname: string, searchKey: string) {
+  const [counts, setCounts] = useState(initial);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const res = await fetch("/api/admin/counts", { cache: "no-store" });
+        if (res.ok && !cancelled) setCounts((await res.json()) as Counts);
+      } catch {
+        // Offline or server restarting: keep the last known counts.
+      }
+    };
+    void load();
+    const timer = window.setInterval(load, COUNTS_REFRESH_MS);
+    document.addEventListener("visibilitychange", load);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", load);
+    };
+  }, [pathname, searchKey]);
+  return counts;
+}
+
+export function AdminNav({ role, email, counts: initialCounts = {} }: { role: "staff" | "owner"; email: string; counts?: Counts }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const counts = useLiveCounts(initialCounts, pathname, searchParams.toString());
+  const locationKey = `${pathname}?${searchParams.toString()}`;
   const [open, setOpen] = useState(false);
   const [findOpen, setFindOpen] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect -- close mobile nav on navigation
-  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => setOpen(false), [locationKey]);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
 
   // Ctrl/⌘ + K opens Quick find from anywhere in the admin.
   useEffect(() => {
@@ -170,54 +207,32 @@ export function AdminNav({ role, email, counts = {} }: { role: "staff" | "owner"
             <ul className="space-y-0.5">
               {g.items.map((i) => {
                 const active = isActive(pathname, i.href, searchParams);
-                const enabled =
-                  i.href === "/admin/products" ||
-                  i.href === "/admin/settings" ||
-                  i.href === "/admin/colours" ||
-                  i.href === "/admin/reviews" ||
-                  i.href === "/admin/social-links" ||
-                  i.href === "/admin/content/announcement" ||
-                  i.href === "/admin/products?preorder=1";
                 const count = counts[i.href] ?? 0;
-                const content = (
-                  <>
-                    <i.icon className="size-4 shrink-0" />
-                    <span className="flex-1">{i.label}</span>
-                    {count > 0 ? (
-                      <span
-                        title={`${count} ${i.hint ?? ""}`.trim()}
-                        className={cn(
-                          "min-w-5 px-1.5 py-px text-center text-[0.625rem] font-semibold tabular-nums",
-                          active ? "bg-ink text-canvas" : "bg-cream text-ink",
-                        )}
-                      >
-                        {count > 99 ? "99+" : count}
-                        <span className="sr-only"> {i.hint}</span>
-                      </span>
-                    ) : null}
-                  </>
-                );
                 return (
                   <li key={i.href}>
-                    {enabled ? (
-                      <Link
-                        href={i.href}
-                        aria-current={active ? "page" : undefined}
-                        className={cn(
-                          "flex items-center gap-2.5 px-2.5 py-2 text-[0.8125rem] transition-colors",
-                          active ? "bg-canvas text-ink" : "text-canvas/75 hover:bg-canvas/10 hover:text-canvas",
-                        )}
-                      >
-                        {content}
-                      </Link>
-                    ) : (
-                      <span
-                        aria-disabled="true"
-                        className="flex cursor-not-allowed items-center gap-2.5 px-2.5 py-2 text-[0.8125rem] text-canvas/35"
-                      >
-                        {content}
-                      </span>
-                    )}
+                    <Link
+                      href={i.href}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "flex items-center gap-2.5 px-2.5 py-2 text-[0.8125rem] transition-colors",
+                        active ? "bg-canvas text-ink" : "text-canvas/75 hover:bg-canvas/10 hover:text-canvas",
+                      )}
+                    >
+                      <i.icon className="size-4 shrink-0" />
+                      <span className="flex-1">{i.label}</span>
+                      {count > 0 ? (
+                        <span
+                          title={`${count} ${i.hint ?? ""}`.trim()}
+                          className={cn(
+                            "min-w-5 px-1.5 py-px text-center text-[0.625rem] font-semibold tabular-nums",
+                            active ? "bg-ink text-canvas" : "bg-cream text-ink",
+                          )}
+                        >
+                          {count > 99 ? "99+" : count}
+                          <span className="sr-only"> {i.hint}</span>
+                        </span>
+                      ) : null}
+                    </Link>
                   </li>
                 );
               })}

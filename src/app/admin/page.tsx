@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { variantLabel } from "@/lib/fits";
-import { CheckCircle2, ChevronRight, ExternalLink, LayoutGrid, Percent, Plus } from "lucide-react";
+import { CheckCircle2, ChevronRight, ExternalLink, Plus } from "lucide-react";
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { contactMessages, orders, products, reviews, users, variants } from "@/db/schema";
@@ -80,8 +80,6 @@ export default async function AdminDashboard({ searchParams }: Props) {
         actions={
           <>
             <Link href="/admin/products/new" className={abtn("primary")}><Plus className="size-3.5" /> Add product</Link>
-            <Link href="/admin/discounts/new" className={abtn("secondary")}><Percent className="size-3.5" /> New discount</Link>
-            <Link href="/admin/content" className={abtn("secondary")}><LayoutGrid className="size-3.5" /> Edit homepage</Link>
             <Link href="/" target="_blank" className={abtn("ghost")}><ExternalLink className="size-3.5" /> View store</Link>
           </>
         }

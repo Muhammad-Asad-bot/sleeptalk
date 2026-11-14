@@ -2,8 +2,9 @@ import "server-only";
 import { cache } from "react";
 import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { homeSections, markets, pages, settings, shippingRates } from "@/db/schema";
+import { homeSections, markets, settings, shippingRates } from "@/db/schema";
 import { DEFAULT_SETTINGS, type SettingsMap } from "@/content/defaults";
+import { CONTENT_PAGES } from "@/content/pages";
 import type { MarketCode } from "@/lib/markets";
 import { storeCached } from "./store-cache";
 
@@ -56,13 +57,10 @@ export const getShippingRates = cache(
   }, "shipping-rates"),
 );
 
-export const getPage = cache(
-  storeCached(async (slug: string) => {
-    const db = await getDb();
-    const [page] = await db.select().from(pages).where(eq(pages.slug, slug)).limit(1);
-    return page ?? null;
-  }, "page"),
-);
+/** Storefront content pages live in code: see src/content/pages.ts. */
+export async function getPage(slug: string) {
+  return Object.hasOwn(CONTENT_PAGES, slug) ? CONTENT_PAGES[slug] : null;
+}
 
 export const getHomeSections = cache(
   storeCached(async () => {

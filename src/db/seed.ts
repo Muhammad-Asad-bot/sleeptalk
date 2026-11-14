@@ -62,132 +62,6 @@ const CATEGORIES = [
   { slug: "tracksuits", name: "Tracksuits", garment: "tracksuit" as const, cw: "charcoal" as const },
 ];
 
-const PAGES: { slug: string; title: string; body: string }[] = [
-  {
-    slug: "about",
-    title: "About SLEEP TALK",
-    body: ABOUT_BODY,
-  },
-  {
-    slug: "faq",
-    title: "Frequently asked questions",
-    body: `> [Placeholder answers — final wording to be supplied and reviewed by SLEEP TALK.]
-
-## Which countries do you ship to?
-We sell to the United Kingdom and Canada at launch. Prices are shown in GBP (£) for the UK and CAD ($) for Canada.
-
-## How do I choose my size?
-Every product page links to our Size Guide. Our pieces are unisex; fit notes on each product describe how it is intended to sit.
-
-## Can I buy tracksuit pieces separately?
-Some tracksuits are available as a complete set and as individual matching pieces. Each product page states clearly whether the price is for the full set or a single piece.
-
-## How do returns work?
-Our returns policy will be published on the Returns page once confirmed.
-
-## Do I need an account to order?
-No. Guest checkout is available. An account lets you track orders, save addresses and keep a wishlist.
-
-## How can I track my order?
-Use the Track Order page with your order number and email address, or view it in your account.`,
-  },
-  {
-    slug: "size-guide",
-    title: "Size guide",
-    body: `## Standard or oversized?
-
-Every piece is unisex, and our size chart covers two fits. **Standard fit** is our relaxed everyday cut: take your usual size. **Oversized fit** has a wider body, dropped shoulder and extra length for a roomier streetwear look. Want the oversized length without as much width? Try one size down. Compare both fits for S to XL in the chart above.
-
-## Find your size (body measurements)
-
-Body measurements in inches.
-
-| Size | Chest | Waist | Hips |
-| --- | --- | --- | --- |
-| XS | 31–34 | 26–28 | 32–35 |
-| S (Small) | 34–37 | 28–31 | 35–38 |
-| M (Medium) | 38–41 | 32–35 | 38–41 |
-| L (Large) | 42–45 | 36–39 | 41–44 |
-| XL | 46–49 | 40–43 | 44–47 |
-| XXL | 50–53 | 44–47 | 47–50 |
-
-## How to measure
-- **Chest:** around the fullest part of your chest, under the arms, keeping the tape level.
-- **Waist:** around your natural waistline, just above the belly button.
-- **Hips:** around the widest part of your hips.
-- **Inseam:** from the crotch seam to the bottom of the ankle.
-- **Garment measurements:** lay the item flat without stretching. Widths marked ½ in the chart are measured straight across; double them for the full measurement.
-
-Measurements can vary by about ½ inch between pieces. Questions about fit? [Contact us](/contact) and we'll help you choose.`,
-  },
-  {
-    slug: "shipping",
-    title: "Shipping & delivery",
-    body: `> [Placeholder policy — shipping carriers, rates, delivery estimates and free-shipping thresholds are pending client confirmation. No delivery times are promised.]
-
-## United Kingdom
-Shipping options and rates are shown at checkout. Delivery estimates will be published once carriers are confirmed.
-
-## Canada
-Shipping options and rates are shown at checkout. Information on duties and taxes will be published once the fulfilment model is confirmed.`,
-  },
-  {
-    slug: "returns",
-    title: "Returns & refunds",
-    body: `> [Placeholder policy — the returns/exchange policy and return address are to be supplied by the client and legally reviewed.]
-
-## Returns window
-To be confirmed.
-
-## How to start a return
-To be confirmed. Please contact us via the Contact page in the meantime.
-
-## Refunds
-Refunds are issued to the original payment method once a return has been received and inspected.`,
-  },
-  {
-    slug: "privacy-policy",
-    title: "Privacy policy",
-    body: `> [Placeholder — final privacy notice to be supplied and approved by the client and legal counsel, covering UK GDPR and Canadian (PIPEDA) requirements.]
-
-## What we collect
-Order, account and contact details you provide, and — only with your consent — analytics cookies.
-
-## How we use it
-To process orders, provide customer service, and (if you opt in) send marketing emails.
-
-## Your rights
-You can request access to or deletion of your data. Data retention and deletion processes are to be confirmed.`,
-  },
-  {
-    slug: "terms",
-    title: "Terms & conditions",
-    body: `> [Placeholder — terms and conditions to be supplied and approved by the client and legal counsel.]
-
-## Orders
-Orders are confirmed only after successful payment.
-
-## Pricing
-Prices are shown per market in GBP or CAD.`,
-  },
-  {
-    slug: "cookie-policy",
-    title: "Cookie policy",
-    body: `> [Placeholder — final cookie wording to be reviewed by the client/legal counsel.]
-
-## Essential cookies
-Used to keep your bag, session, selected market and cookie preferences. These are required for the store to work.
-
-## Analytics cookies
-Only set if you accept them in the cookie banner. You can change your choice anytime via "Cookie preferences" in the footer.`,
-  },
-  {
-    slug: "contact",
-    title: "Contact us",
-    body: `Questions about an order, sizing or anything else? Send us a message and we'll get back to you.`,
-  },
-];
-
 /** Homepage tracksuit spotlight (section type "editorial"), editable in admin. */
 export const SPOTLIGHT_DATA = {
   eyebrow: "Front to back",
@@ -254,7 +128,7 @@ export async function seed(db: Db) {
         .values({
           slug: c.slug,
           name: c.name,
-          description: `Unisex ${c.name.toLowerCase()} from SLEEP TALK. [Demo category copy]`,
+          description: `Unisex ${c.name.toLowerCase()} from SLEEP TALK.`,
           image: demoFlatLay(c.garment, c.cw, "front"),
           position: i,
           seoTitle: `${c.name}`,
@@ -266,29 +140,6 @@ export async function seed(db: Db) {
 
     // Product listings are added manually after real product details are available.
 
-    // Collections (examples only — fully editable in admin)
-    await tx.insert(s.collections).values([
-      {
-        slug: "new-season",
-        title: "New Season",
-        description: "The latest pieces from SLEEP TALK. [Demo collection]",
-        image: demoFlatLay("tracksuit", "black", "front"),
-        mode: "rule",
-        rules: { newArrivals: true },
-        position: 1,
-        isDemo: true,
-      },
-      {
-        slug: "essentials",
-        title: "Essentials",
-        description: "Everyday staples in black, cream and charcoal. [Demo collection]",
-        image: demoFlatLay("tee", "cream", "front"),
-        mode: "rule",
-        rules: { tags: ["essentials"] },
-        position: 2,
-        isDemo: true,
-      },
-    ]);
     // Homepage sections (reorderable / toggleable / editable in admin)
     const sections: { type: s.HomeSectionType; data: Record<string, unknown> }[] = [
       {
@@ -346,26 +197,14 @@ export async function seed(db: Db) {
         },
       },
     ];
-    // UK-streetwear homepage: hero (+ ticker), latest drop, categories, campaign collection.
+    // UK-streetwear homepage: hero (+ ticker), latest drop, editorial, categories.
     // Other sections are seeded hidden so admins can switch them on later.
-    const HOME_LAYOUT: s.HomeSectionType[] = ["hero", "new_arrivals", "editorial", "categories", "featured_collection"];
+    const HOME_LAYOUT: s.HomeSectionType[] = ["hero", "new_arrivals", "editorial", "categories"];
     await tx.insert(s.homeSections).values(
       sections.map((sec, i) => {
         const pos = HOME_LAYOUT.indexOf(sec.type);
         return { ...sec, position: pos === -1 ? HOME_LAYOUT.length + i : pos, visible: pos !== -1 };
       }),
-    );
-
-    // Content pages
-    await tx.insert(s.pages).values(
-      PAGES.map((p) => ({
-        slug: p.slug,
-        title: p.title,
-        body: p.body,
-        seoTitle: p.title,
-        seoDescription: `${p.title} — SLEEP TALK`,
-        isPlaceholder: true,
-      })),
     );
 
     // Demo discount codes

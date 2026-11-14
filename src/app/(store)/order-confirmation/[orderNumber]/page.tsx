@@ -6,6 +6,7 @@ import { PaidOrderEffects, PendingRefresher, SubmittedOrderEffects } from "@/com
 import { buttonClass } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/server/auth";
 import { getOrderForViewer } from "@/lib/server/orders";
+import { getOrderReviewPrompts } from "@/lib/server/review-eligibility";
 
 export const metadata: Metadata = { title: "Order confirmation", robots: { index: false } };
 
@@ -66,6 +67,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
   }
 
   const tracking = view === "track";
+  const reviews = await getOrderReviewPrompts(order, user?.id ?? null);
   return (
     <div className="container-site pt-10 md:pt-16">
       {order.status === "paid" && !tracking ? (
@@ -87,7 +89,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
           </p>
         ) : null}
         <div className="mt-10">
-          <OrderDetail order={order} />
+          <OrderDetail order={order} reviews={reviews} />
         </div>
         <div className="mt-12 flex flex-wrap gap-3">
           <Link href="/shop" className={buttonClass("primary", "lg")}>Continue shopping</Link>

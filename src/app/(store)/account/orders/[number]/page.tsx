@@ -5,6 +5,7 @@ import { AccountShell } from "@/components/account/account-shell";
 import { OrderDetail } from "@/components/account/order-detail";
 import { requireUser } from "@/lib/server/auth";
 import { getOrderForViewer } from "@/lib/server/orders";
+import { getOrderReviewPrompts } from "@/lib/server/review-eligibility";
 import { formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Order details", robots: { index: false } };
@@ -17,10 +18,11 @@ export default async function AccountOrderPage({ params }: Props) {
   // Ownership enforced: only the signed-in owner can view (no IDOR via order number).
   const order = await getOrderForViewer(number, null, user.id);
   if (!order) notFound();
+  const reviews = await getOrderReviewPrompts(order, user.id);
   return (
     <AccountShell active="/account/orders" title={`Order ${order.number}`} name={user.firstName || "there"}>
       <p className="mb-6 text-sm text-ash">Placed {formatDate(order.createdAt)} · <Link href="/account/orders" className="underline">All orders</Link></p>
-      <OrderDetail order={order} />
+      <OrderDetail order={order} reviews={reviews} />
     </AccountShell>
   );
 }

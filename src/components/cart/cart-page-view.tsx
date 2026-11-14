@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useStore } from "@/components/providers/store-provider";
 import { buttonClass } from "@/components/ui/button";
 import { CartLines } from "./cart-lines";
-import { DiscountForm, TotalsTable } from "./cart-summary";
+import { TotalsTable } from "./cart-summary";
 
 export function CartPageView() {
   const { lines, quote, hydrated, quoteLoading } = useStore();
@@ -45,7 +45,6 @@ export function CartPageView() {
           <aside className="lg:col-span-4">
             <div className="space-y-6 bg-paper p-6 lg:sticky lg:top-24">
               <h2 className="label">Order summary</h2>
-              <DiscountForm />
               <TotalsTable quote={quote} showShipping={false} />
               {quote.hasIssues ? (
                 <p role="alert" className="text-xs text-sale">Please resolve the highlighted items before checking out.</p>

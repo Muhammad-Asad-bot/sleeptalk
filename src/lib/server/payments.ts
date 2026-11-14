@@ -4,16 +4,11 @@ import { absoluteUrl } from "@/lib/utils";
 import { safeEqual } from "./security";
 
 /**
- * Payment provider adapters. Card details never touch this application: shoppers pay on the
- * provider's hosted page and the order is marked paid only from a verified server-side event.
- *
- *  - "test": built-in simulator for development. Disabled when NODE_ENV=production unless
- *    ALLOW_TEST_PAYMENTS=true (staging only).
- *  - "stripe": Stripe Checkout (supports UK and Canadian merchants). Requires STRIPE_SECRET_KEY
- *    and STRIPE_WEBHOOK_SECRET; webhook endpoint: /api/webhooks/stripe
- *    CAD orders can also be paid from a Canadian bank account (pre-authorized debit / ACSS).
- *    Bank debits clear in 3–5 business days: the order stays "awaiting payment" with
- *    bankDebitSubmittedAt set until checkout.session.async_payment_succeeded/failed arrives.
+ * Payments run through Stripe Checkout only. Card details never touch this application: shoppers
+ * pay on Stripe's hosted page and the order is marked paid only from a verified webhook event.
+ * Requires STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET; webhook endpoint: /api/webhooks/stripe
+ * Which methods appear on the hosted page (cards, Apple Pay, Google Pay, …) is set in the Stripe
+ * Dashboard. Orders placed with a test-mode key (sk_test_…) are flagged as test orders.
  */
 
 export type PaymentOrder = {
@@ -28,14 +23,15 @@ export type PaymentOrder = {
 
 export type PaymentSession = { redirectUrl: string; ref: string };
 
-export type ProviderId = "test" | "stripe";
+export type ProviderId = "stripe";
 
 export function activeProvider(): ProviderId {
-  return process.env.PAYMENT_PROVIDER === "stripe" ? "stripe" : "test";
+  return "stripe";
 }
 
-export function testPaymentsAllowed() {
-  return process.env.NODE_ENV !== "production" || process.env.ALLOW_TEST_PAYMENTS === "true";
+/** True when the configured Stripe key is a test-mode key: no real money moves. */
+export function stripeTestMode() {
+  return (process.env.STRIPE_SECRET_KEY ?? "").startsWith("sk_test_");
 }
 
 function confirmationUrl(order: PaymentOrder) {
@@ -47,15 +43,6 @@ export function failureUrl(order: Pick<PaymentOrder, "number" | "accessToken">, 
 }
 
 export async function createPaymentSession(order: PaymentOrder): Promise<PaymentSession> {
-  const provider = activeProvider();
-  if (provider === "test") {
-    if (!testPaymentsAllowed()) throw new Error("Test payments are disabled in production.");
-    return {
-      redirectUrl: `/checkout/test-payment?order=${encodeURIComponent(order.number)}&t=${encodeURIComponent(order.accessToken)}`,
-      ref: `test_${order.number}`,
-    };
-  }
-
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY is not configured.");
   const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60;
@@ -75,13 +62,6 @@ export async function createPaymentSession(order: PaymentOrder): Promise<Payment
     "line_items[0][price_data][product_data][name]": `SLEEP TALK order ${order.number} (${order.itemCount} item${order.itemCount === 1 ? "" : "s"})`,
     expires_at: String(expiresAt),
   });
-  if (order.currency.toUpperCase() === "CAD") {
-    // Card (incl. Apple Pay / Google Pay) plus Canadian bank account. One-off purchases by consumers.
-    body.append("payment_method_types[]", "card");
-    body.append("payment_method_types[]", "acss_debit");
-    body.set("payment_method_options[acss_debit][mandate_options][payment_schedule]", "sporadic");
-    body.set("payment_method_options[acss_debit][mandate_options][transaction_type]", "personal");
-  }
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
     headers: {

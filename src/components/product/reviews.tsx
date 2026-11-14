@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Star } from "lucide-react";
-import { useActionState, useState, useTransition } from "react";
+import { startTransition, useActionState, useState, useTransition } from "react";
 import { reportReviewAction, submitReviewAction } from "@/app/actions/reviews";
 import type { FormState } from "@/app/actions/store";
 import { buttonClass } from "@/components/ui/button";
@@ -37,14 +37,25 @@ function ReviewForm({ productId, defaultName }: { productId: string; defaultName
   const [rating, setRating] = useState(0);
   if (state?.ok) return <FormMessage tone="success">{state.message}</FormMessage>;
   return (
-    <form action={action} className="space-y-4" noValidate>
+    <form
+      // Submitted by hand instead of `action={...}` so React doesn't clear the form after a
+      // failed attempt: the shopper keeps their text and their star rating.
+      onSubmit={(e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        startTransition(() => action(data));
+      }}
+      className="space-y-4"
+      noValidate
+    >
       <input type="hidden" name="productId" value={productId} />
+      <input type="hidden" name="rating" value={rating || ""} />
       <fieldset>
         <legend className="mb-2 text-xs font-medium">Your rating *</legend>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((i) => (
             <label key={i} className="cursor-pointer has-[:focus-visible]:outline has-[:focus-visible]:outline-2">
-              <input type="radio" name="rating" value={i} className="sr-only" checked={rating === i} onChange={() => setRating(i)} />
+              <input type="radio" name="rating-choice" value={i} className="sr-only" checked={rating === i} onChange={() => setRating(i)} />
               <Star className={cn("size-7", i <= rating ? "fill-ink text-ink" : "text-sand")} strokeWidth={1.25} />
               <span className="sr-only">{i} star{i > 1 ? "s" : ""}</span>
             </label>

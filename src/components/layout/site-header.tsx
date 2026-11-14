@@ -14,7 +14,6 @@ import { cn } from "@/lib/utils";
 import { MarketSelector } from "./market-selector";
 
 export type NavCategory = { slug: string; name: string; image: string };
-export type NavCollection = { slug: string; title: string; image: string };
 
 const PRIMARY_LINKS = [
   { href: "/new-arrivals", label: "New Arrivals" },
@@ -25,7 +24,6 @@ const PRIMARY_LINKS = [
 
 export function SiteHeader({
   categories,
-  collections,
   market,
   markets,
   userName,
@@ -33,7 +31,6 @@ export function SiteHeader({
   logoLight,
 }: {
   categories: NavCategory[];
-  collections: NavCollection[];
   market: MarketCode;
   markets: MarketCode[];
   userName: string | null;
@@ -280,7 +277,7 @@ export function SiteHeader({
                 </ul>
               </div>
 
-              {/* Discover + collections */}
+              {/* Discover */}
               <div className="col-span-2 flex flex-col gap-8 xl:col-span-3">
                 <div>
                   <p className="mb-5 text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-stone">Discover</p>
@@ -300,26 +297,12 @@ export function SiteHeader({
                     ))}
                   </ul>
                 </div>
-                {collections.length ? (
-                  <div>
-                    <p className="mb-5 text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-stone">Collections</p>
-                    <ul className="space-y-3 text-[0.8125rem] font-medium uppercase tracking-[0.06em]">
-                      {collections.slice(0, 4).map((c) => (
-                        <li key={c.slug}>
-                          <Link href={`/collections/${c.slug}`} className="link-underline">
-                            {c.title}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
                 <Link href="/size-guide" className="mt-auto inline-flex items-center gap-2 text-xs text-ash underline-offset-4 hover:underline">
                   Size guide <ArrowRight className="size-3" aria-hidden />
                 </Link>
               </div>
 
-              {/* Visual tiles: hovered category preview + featured collection */}
+              {/* Visual tiles: hovered category preview + complete sets */}
               <div className="col-span-6 grid grid-cols-2 gap-3">
                 {preview ? (
                   <Link href={`/shop/${preview.slug}`} className="group on-dark relative block aspect-[4/5] overflow-hidden bg-cream text-canvas">

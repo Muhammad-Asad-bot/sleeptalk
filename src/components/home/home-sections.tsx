@@ -105,7 +105,7 @@ export function HeroSection({ data, social, demoMode = false }: { data: Data; so
                 <ArrowRight className="size-4" aria-hidden />
               </ButtonLink>
               {str(heroData, "secondaryLabel") ? (
-                <ButtonLink href={str(heroData, "secondaryHref", "/collections")} variant="outline-inverse" size="lg">
+                <ButtonLink href={str(heroData, "secondaryHref", "/shop")} variant="outline-inverse" size="lg">
                   {str(heroData, "secondaryLabel")}
                 </ButtonLink>
               ) : null}
@@ -221,54 +221,6 @@ export function ProductGridSection({ data, products, listName }: { data: Data; p
     <section className="container-wide py-14 md:py-20" aria-label={str(data, "heading")}>
       <SectionHeader heading={str(data, "heading")} ctaLabel={str(data, "ctaLabel")} ctaHref={str(data, "ctaHref")} />
       <ProductGrid products={products} listName={listName} priorityCount={0} />
-    </section>
-  );
-}
-
-export function FeaturedCollectionSection({
-  data,
-  collection,
-  products,
-}: {
-  data: Data;
-  collection: { slug: string; title: string; image: string; description: string } | null;
-  products: ProductCardData[];
-}) {
-  if (!collection) return null;
-  return (
-    <section className="pb-14 pt-4 md:pb-20" aria-labelledby="featured-heading">
-      {/* Full-bleed campaign banner */}
-      <Link
-        href={`/collections/${collection.slug}`}
-        className="group on-dark relative block h-[70svh] max-h-[760px] min-h-[420px] overflow-hidden bg-night text-canvas"
-      >
-        <SmartImage
-          src={collection.image}
-          alt=""
-          fill
-          sizes="100vw"
-          className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.02]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-night/85 via-night/40 to-transparent" aria-hidden />
-        <div className="container-wide relative flex h-full flex-col justify-end pb-12 md:pb-16">
-          <p className="mb-4 flex items-center gap-4 text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-canvas/85 md:text-[0.8125rem]">
-            {str(data, "eyebrow", "Collection")}
-            <span className="h-px w-20 bg-canvas/60" aria-hidden />
-          </p>
-          <h2 id="featured-heading" className="hero-title text-5xl md:text-8xl">
-            {str(data, "heading", collection.title)}
-          </h2>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-canvas/80 md:text-base">{str(data, "body", collection.description)}</p>
-          <span className="mt-8 inline-flex h-[52px] w-fit items-center gap-6 border border-canvas/80 px-8 text-[0.8125rem] font-semibold uppercase tracking-[0.06em] transition-colors group-hover:bg-canvas group-hover:text-ink">
-            {str(data, "ctaLabel", `Shop ${collection.title}`)} <ArrowRight className="size-4" aria-hidden />
-          </span>
-        </div>
-      </Link>
-      {products.length ? (
-        <div className="container-wide mt-10">
-          <ProductGrid products={products} listName={`Collection: ${collection.title}`} priorityCount={0} />
-        </div>
-      ) : null}
     </section>
   );
 }

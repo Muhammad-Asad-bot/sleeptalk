@@ -6,7 +6,7 @@ import { CheckoutView } from "@/components/checkout/checkout-view";
 import { MARKETS } from "@/lib/markets";
 import { getCurrentUser } from "@/lib/server/auth";
 import { getMarket } from "@/lib/server/market";
-import { activeProvider } from "@/lib/server/payments";
+import { stripeTestMode } from "@/lib/server/payments";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
 
@@ -35,7 +35,7 @@ export default async function CheckoutPage() {
           phone: a.phone,
           isDefault: a.isDefault,
         }))}
-      testMode={activeProvider() === "test"}
+      testMode={stripeTestMode()}
     />
   );
 }

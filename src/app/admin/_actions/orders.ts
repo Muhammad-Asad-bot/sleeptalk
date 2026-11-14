@@ -41,10 +41,15 @@ export async function updateFulfilmentAction(formData: FormData) {
 
   if (notify && (status === "shipped" || status === "delivered") && status !== order.fulfillmentStatus) {
     const tracking = trackingNumber ? `\nTracking: ${carrier ? `${carrier} ` : ""}${trackingNumber}` : "";
+    // Reviews are open to account holders for 7 days after delivery (see review-eligibility.ts).
+    const reviewInvite =
+      status === "delivered" && order.userId
+        ? `\nHow was it? Leave a review within the next 7 days: ${absoluteUrl(`/account/orders/${order.number}`)}\n`
+        : "";
     await sendEmail({
       to: order.email,
       subject: status === "shipped" ? `Your SLEEP TALK order ${order.number} is on its way` : `Your SLEEP TALK order ${order.number} has been delivered`,
-      text: `${status === "shipped" ? "Good news — your order has shipped." : "Your order has been marked as delivered."}${tracking}\n\nView your order: ${absoluteUrl(`/order-confirmation/${order.number}?t=${order.accessToken}&view=track`)}\n`,
+      text: `${status === "shipped" ? "Good news — your order has shipped." : "Your order has been marked as delivered."}${tracking}\n\nView your order: ${absoluteUrl(`/order-confirmation/${order.number}?t=${order.accessToken}&view=track`)}\n${reviewInvite}`,
     }).catch(() => null);
   }
   revalidatePath(path);

@@ -5,7 +5,7 @@ import { Check, Lock } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { placeOrderAction } from "@/app/actions/checkout";
 import { useStore } from "@/components/providers/store-provider";
-import { DiscountForm, TotalsTable } from "@/components/cart/cart-summary";
+import { TotalsTable } from "@/components/cart/cart-summary";
 import { buttonClass } from "@/components/ui/button";
 import { FormMessage, TextInput } from "@/components/ui/fields";
 import { SmartImage } from "@/components/ui/smart-image";
@@ -229,7 +229,7 @@ export function CheckoutView({
       </div>
       {testMode ? (
         <p className="mt-4 bg-cream px-4 py-3 text-xs text-charcoal">
-          <strong>Test mode:</strong> payments are simulated. No card is charged and no order will be fulfilled.
+          <strong>Test mode:</strong> no real payment is taken. Pay with Stripe&apos;s test card 4242 4242 4242 4242, any future expiry and any CVC.
         </p>
       ) : null}
       {formError ? <div className="mt-6"><FormMessage>{formError}</FormMessage></div> : null}
@@ -311,11 +311,7 @@ export function CheckoutView({
           <StepShell step={step} onEdit={setStep} n={5} summary="">
             <div className="space-y-4 text-sm">
               <p className="text-ash">
-                {testMode
-                  ? "You'll be taken to a simulated payment page where you can approve or decline the test payment."
-                  : market === "CA"
-                    ? "You'll be redirected to our payment provider's secure page to pay by card or straight from your Canadian bank account. We never see or store your card or bank details. Bank payments take 3–5 business days to clear; your order ships once they do."
-                    : "You'll be redirected to our payment provider's secure page to pay. We never see or store your card details."}
+                You&apos;ll be redirected to Stripe&apos;s secure checkout page to pay. We never see or store your card details.
               </p>
               <dl className="grid gap-3 bg-paper p-4 text-xs sm:grid-cols-2">
                 <div><dt className="text-stone">Contact</dt><dd>{email}</dd></div>
@@ -360,7 +356,6 @@ export function CheckoutView({
                     </li>
                   ))}
                 </ul>
-                <DiscountForm />
                 <TotalsTable quote={quote} showShipping={step >= 3 || !!shippingRateId} />
               </>
             ) : (

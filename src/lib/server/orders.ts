@@ -15,7 +15,7 @@ import type { CartLineInput, CartQuote } from "@/lib/cart-types";
 import { absoluteUrl } from "@/lib/utils";
 import { resolveCart } from "./cart";
 import { sendEmail } from "./email";
-import { activeProvider, cancelPaymentSession, createPaymentSession, getPaymentSessionState } from "./payments";
+import { activeProvider, cancelPaymentSession, createPaymentSession, getPaymentSessionState, stripeTestMode } from "./payments";
 import { randomToken, safeEqual } from "./security";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -173,7 +173,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
           checkoutToken: input.checkoutToken,
           accessToken,
           paymentProvider: activeProvider(),
-          isTest: activeProvider() === "test",
+          isTest: stripeTestMode(),
         })
         .returning({ id: orders.id });
 

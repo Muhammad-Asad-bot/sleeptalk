@@ -13,7 +13,7 @@ export default async function AnnouncementPage({ searchParams }: { searchParams:
   const { announcement } = await getSettings();
   return (
     <>
-      <PageHeader back={{ href: "/admin/content", label: "Homepage" }} title="Announcement bar" description="Edit the rotating messages and the free-shipping note shown on the left. The free-shipping threshold itself is managed in Shipping & markets." />
+      <PageHeader title="Announcement bar" description="Edit the rotating messages and the free-shipping note shown on the left. The free-shipping threshold itself is managed in Shipping & markets." />
       <Flash ok={flash.ok} error={flash.error} />
       <form action={saveAnnouncementAction} className="max-w-2xl">
         <Card>
