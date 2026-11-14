@@ -89,12 +89,9 @@ export function CheckoutView({
   testMode: boolean;
 }) {
   const { lines, discountCode, hydrated, market } = useStore();
-  const defaultSaved = savedAddresses.find((a) => a.isDefault) ?? savedAddresses[0];
   const [step, setStep] = useState<Step>(1);
-  const [email, setEmail] = useState(user?.email ?? "");
-  const [shipping, setShipping] = useState<AddressValue>(() =>
-    defaultSaved ? { ...defaultSaved } : { ...emptyAddress(country), firstName: user?.firstName ?? "", lastName: user?.lastName ?? "" },
-  );
+  const [email, setEmail] = useState("");
+  const [shipping, setShipping] = useState<AddressValue>(() => emptyAddress(country));
   const [billingSame, setBillingSame] = useState(true);
   const [billing, setBilling] = useState<AddressValue>(emptyAddress(country));
   const [shippingRateId, setShippingRateId] = useState<string | null>(null);
