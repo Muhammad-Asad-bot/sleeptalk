@@ -96,6 +96,45 @@ export async function getPaymentSessionState(ref: string | null): Promise<{ stat
   return { status: "unknown" };
 }
 
+export type SessionPayment = {
+  ref: string;
+  orderId: string | null;
+  status: string | null;
+  paymentStatus: string | null;
+  amount?: number;
+  currency?: string;
+};
+
+/**
+ * Reads a Checkout Session straight from Stripe's API (authenticated with the secret key), so the
+ * result is as trustworthy as a signed webhook. Used to confirm a payment when the webhook is slow
+ * or missing.
+ */
+export async function getSessionPayment(ref: string | null): Promise<SessionPayment | null> {
+  if (!ref || !ref.startsWith("cs_") || !process.env.STRIPE_SECRET_KEY) return null;
+  const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${ref}`, {
+    headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` },
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  const json = (await res.json()) as {
+    id: string;
+    status?: string | null;
+    payment_status?: string | null;
+    amount_total?: number | null;
+    currency?: string | null;
+    metadata?: { order_id?: string };
+  };
+  return {
+    ref: json.id,
+    orderId: json.metadata?.order_id ?? null,
+    status: json.status ?? null,
+    paymentStatus: json.payment_status ?? null,
+    amount: json.amount_total ?? undefined,
+    currency: json.currency ?? undefined,
+  };
+}
+
 /** Expires an open Stripe Checkout Session so it can no longer be paid. */
 export async function cancelPaymentSession(ref: string | null) {
   if (!ref || !ref.startsWith("cs_") || !process.env.STRIPE_SECRET_KEY) return true;

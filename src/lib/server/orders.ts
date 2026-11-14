@@ -15,7 +15,7 @@ import type { CartLineInput, CartQuote } from "@/lib/cart-types";
 import { absoluteUrl } from "@/lib/utils";
 import { resolveCart } from "./cart";
 import { sendEmail } from "./email";
-import { activeProvider, cancelPaymentSession, createPaymentSession, getPaymentSessionState, stripeTestMode } from "./payments";
+import { activeProvider, cancelPaymentSession, createPaymentSession, getPaymentSessionState, getSessionPayment, stripeTestMode } from "./payments";
 import { randomToken, safeEqual } from "./security";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -401,6 +401,29 @@ export async function getOrderWithItems(number: string) {
   const db = await getDb();
   const order = await db.query.orders.findFirst({ where: eq(orders.number, number), with: { items: true } });
   return order ?? null;
+}
+
+/**
+ * Fallback for a missing or delayed webhook: asks Stripe directly whether this order's Checkout
+ * Session was paid and records it. Returns true when the order changed.
+ */
+export async function reconcilePendingOrder(order: { id: string; status: string; paymentRef: string | null; bankDebitSubmittedAt: Date | null }) {
+  if (order.status !== "pending_payment" || order.bankDebitSubmittedAt) return false;
+  try {
+    const session = await getSessionPayment(order.paymentRef);
+    if (!session || session.orderId !== order.id || session.status !== "complete") return false;
+    if (session.paymentStatus === "paid" || session.paymentStatus === "no_payment_required") {
+      const r = await markOrderPaid(order.id, { ref: session.ref, amount: session.amount, currency: session.currency });
+      return r.ok;
+    }
+    if (session.paymentStatus === "unpaid") {
+      await markBankDebitSubmitted(order.id, session.ref);
+      return true;
+    }
+  } catch (error) {
+    console.error("[checkout] reconciling payment failed", error);
+  }
+  return false;
 }
 
 /** Guest-safe order lookup: requires the order's access token, or ownership by the signed-in user. */

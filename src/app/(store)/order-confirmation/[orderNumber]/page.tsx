@@ -5,7 +5,7 @@ import { FULFILMENT_LABEL, OrderDetail } from "@/components/account/order-detail
 import { PaidOrderEffects, PendingRefresher, SubmittedOrderEffects } from "@/components/checkout/order-effects";
 import { buttonClass } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/server/auth";
-import { getOrderForViewer } from "@/lib/server/orders";
+import { getOrderForViewer, reconcilePendingOrder } from "@/lib/server/orders";
 import { getOrderReviewPrompts } from "@/lib/server/review-eligibility";
 
 export const metadata: Metadata = { title: "Order confirmation", robots: { index: false } };
@@ -18,8 +18,12 @@ type Props = {
 export default async function OrderConfirmationPage({ params, searchParams }: Props) {
   const [{ orderNumber }, { t, view }] = await Promise.all([params, searchParams]);
   const user = await getCurrentUser();
-  const order = await getOrderForViewer(orderNumber, t, user?.id ?? null);
+  let order = await getOrderForViewer(orderNumber, t, user?.id ?? null);
   if (!order) notFound();
+  // Webhook not in yet: check with Stripe directly so the shopper isn't left waiting.
+  if (order.status === "pending_payment" && (await reconcilePendingOrder(order))) {
+    order = (await getOrderForViewer(orderNumber, t, user?.id ?? null)) ?? order;
+  }
 
   // Canadian bank debit submitted: confirmed by the bank in a few days, not seconds.
   if (order.status === "pending_payment" && order.bankDebitSubmittedAt) {
